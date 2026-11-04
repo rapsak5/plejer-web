@@ -1,7 +1,7 @@
 {
   "name": "Plejer",
   "short_name": "Plejer",
-  "description": "Husk det, der aldrig står i kalenderen.",
+  "description": "Plejer husker det, du plejer at glemme.",
   "lang": "da",
   "start_url": "/app/",
   "scope": "/app/",

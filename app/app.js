@@ -217,7 +217,7 @@ function visStart() {
   const demo = S.lager.demo;
   return `<div class="start">
     <div class="logo"><img src="../ikon.svg" alt="">Plejer</div>
-    <p class="lead">Husk det, der aldrig står i kalenderen. Opret jeres husstand, eller deltag i en, der findes.</p>
+    <p class="lead">Plejer husker det, du plejer at glemme. Opret jeres husstand, eller deltag i en, der findes.</p>
     ${demo ? '<div class="banner note"><p>Demotilstand: data ligger kun på denne telefon, indtil appen er koblet til Firebase.</p></div>' : ""}
     <form class="kort" id="opret">
       <h2>Opret husstand</h2>
