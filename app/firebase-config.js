@@ -1,18 +1,15 @@
-// Firebase-opsætning for Plejer.
-// Udfyld med værdierne fra Firebase-konsollen: Projektindstillinger > Dine apps > Web-app.
-// Så længe config er null, kører appen i demotilstand, hvor alt ligger på telefonen.
-self.PLEJER_FIREBASE = null;
-/*
+// Firebase-opsætning for Plejer (projekt plejer-9fcbb, data i eur3).
+// Værdierne er offentlige web-nøgler. Adgangen til data styres af firestore.rules.
+// Sæt PLEJER_FIREBASE til null for at køre i demotilstand, hvor alt ligger på telefonen.
 self.PLEJER_FIREBASE = {
   config: {
-    apiKey: "...",
-    authDomain: "plejer-xxxx.firebaseapp.com",
-    projectId: "plejer-xxxx",
-    storageBucket: "plejer-xxxx.appspot.com",
-    messagingSenderId: "...",
-    appId: "..."
+    apiKey: "AIzaSyACQdqJEe2LD5YL30Xmm_2POx3J7FQCwE0",
+    authDomain: "plejer-9fcbb.firebaseapp.com",
+    projectId: "plejer-9fcbb",
+    storageBucket: "plejer-9fcbb.firebasestorage.app",
+    messagingSenderId: "134051275040",
+    appId: "1:134051275040:web:8eb8146165b501dfdeb745"
   },
   // Cloud Messaging > Web Push-certifikater > Nøglepar
-  vapidKey: "..."
+  vapidKey: "BPwipLqT7a507tz4ECfSw-o-5wcOdIyhKpPHsIOXIsNm5itDpIPNxzVVnU8ASHM8R_QWAk_uMsu07vVHQ0O4jNI"
 };
-*/
