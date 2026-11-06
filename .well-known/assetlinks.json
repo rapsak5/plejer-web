@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "dk.plejer.app",
+      "sha256_cert_fingerprints": ["7B:EE:3F:5B:74:E5:3E:28:C7:66:29:B2:C4:57:64:7D:5F:F6:C1:46:4C:71:22:8F:E0:D1:D6:66:96:AD:E8:40"]
+    }
+  }
+]

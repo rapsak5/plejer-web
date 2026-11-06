@@ -1,9 +1,24 @@
 // Plejer service worker: gør appen installerbar og modtager påmindelser fra Firebase Cloud Messaging.
 importScripts("firebase-config.js");
 
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
-self.addEventListener("fetch", () => {});
+const CACHE = "plejer-v1";
+const SKAL = ["./", "index.html", "app.css", "app.js", "firebase-config.js", "manifest.webmanifest", "ikon-192.png", "ikon-512.png"];
+
+self.addEventListener("install", (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SKAL)).catch(() => {}).then(() => self.skipWaiting()));
+});
+self.addEventListener("activate", (e) => e.waitUntil(
+  caches.keys().then((k) => Promise.all(k.filter((n) => n !== CACHE).map((n) => caches.delete(n)))).then(() => self.clients.claim())
+));
+// Net først, gemt kopi hvis telefonen er offline. Så åbner appen også uden forbindelse.
+self.addEventListener("fetch", (e) => {
+  const r = e.request, u = new URL(r.url);
+  if (r.method !== "GET" || u.origin !== location.origin || !u.pathname.startsWith("/app/")) return;
+  e.respondWith(fetch(r).then((svar) => {
+    if (svar.ok) { const kopi = svar.clone(); caches.open(CACHE).then((c) => c.put(r.mode === "navigate" ? "index.html" : r, kopi)); }
+    return svar;
+  }).catch(() => caches.match(r.mode === "navigate" ? "index.html" : r, { ignoreSearch: true })));
+});
 
 if (self.PLEJER_FIREBASE && self.PLEJER_FIREBASE.config) {
   importScripts(
