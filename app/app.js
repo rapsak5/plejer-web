@@ -53,6 +53,22 @@ function symbolSvg(tagId, cls = "sym") {
 const dagStart = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
 const dageMellem = (a, b) => Math.round((dagStart(a) - dagStart(b)) / DAG);
 const dato = (t) => { const d = new Date(t); return `${d.getDate()}. ${MDR[d.getMonth()]}`; };
+const isoDato = (t) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+// Valgt dato bliver kl. 12 den dag. Er det i dag, bruges tidspunktet lige nu.
+function fraIsoDato(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ""); if (!m) return null;
+  const t = new Date(+m[1], +m[2] - 1, +m[3], 12).getTime();
+  return dagStart(t) === dagStart(Date.now()) ? Date.now() : t;
+}
+// Hvornår blev det sidst gjort ifølge formularen? null betyder "ved ikke".
+function formSidst(f) {
+  if (f.sidst === "i-dag") return Date.now();
+  if (f.sidst === "dato") {
+    if (f.ret && f.opgave?.lastDone && f.sidstDato === isoDato(f.opgave.lastDone)) return f.opgave.lastDone;
+    return fraIsoDato(f.sidstDato);
+  }
+  return null;
+}
 function laegTil(t, n, enhed) {
   if (enhed === "d") return t + n * DAG;
   if (enhed === "w") return t + n * 7 * DAG;
@@ -269,9 +285,10 @@ function visHjem() {
 }
 function visNyt() {
   const f = S.data, info = maerkeInfo(f.id);
-  const frist = f.sidst === "i-dag" ? laegTil(Date.now(), f.num, f.unit) : Date.now();
+  const sidst = formSidst(f), frist = sidst ? laegTil(sidst, f.num, f.unit) : Date.now();
+  const forsinket = sidst && frist <= Date.now();
   return `<div class="maerke-top">
-      <span class="etiket">Nyt mærke fundet</span>
+      <span class="etiket">${f.ret ? "Ret opgave" : "Nyt mærke fundet"}</span>
       ${symbolSvg(f.id, "stor")}
       <span class="navn">${esc(info.navn)}</span><span class="mono daempet">${esc(info.kode)}</span>
     </div>
@@ -285,10 +302,11 @@ function visNyt() {
       ${f.andet ? `<div class="raek"><div class="felt"><label for="o-num">Hver</label><input id="o-num" type="number" inputmode="numeric" min="1" max="99" value="${f.num}"></div>
         <div class="felt"><label for="o-enhed">Enhed</label><select id="o-enhed"><option value="d"${f.unit === "d" ? " selected" : ""}>dag</option><option value="w"${f.unit === "w" ? " selected" : ""}>uge</option><option value="m"${f.unit === "m" ? " selected" : ""}>måned</option></select></div></div>` : ""}
       <div class="felt"><span class="etiket">Sidst gjort</span>
-        <div class="seg"><button type="button" data-handling="sidst" data-v="i-dag" aria-pressed="${f.sidst === "i-dag"}">I dag</button><button type="button" data-handling="sidst" data-v="ved-ikke" aria-pressed="${f.sidst === "ved-ikke"}">Ved ikke</button></div>
+        <div class="seg"><button type="button" data-handling="sidst" data-v="i-dag" aria-pressed="${f.sidst === "i-dag"}">I dag</button><button type="button" data-handling="sidst" data-v="dato" aria-pressed="${f.sidst === "dato"}">Vælg dato</button><button type="button" data-handling="sidst" data-v="ved-ikke" aria-pressed="${f.sidst === "ved-ikke"}">Ved ikke</button></div>
       </div>
-      <p class="daempet">Første påmindelse: <b style="color:var(--blaek)">${f.sidst === "i-dag" ? dato(frist) : "med det samme"}</b></p>
-      <button class="knap bred" type="submit">Gem og start nedtælling</button>
+      ${f.sidst === "dato" ? `<div class="felt"><label for="o-dato">Dato</label><input id="o-dato" type="date" value="${esc(f.sidstDato || "")}" max="${isoDato(Date.now())}" required></div>` : ""}
+      <p class="daempet">${f.ret ? "Næste påmindelse" : "Første påmindelse"}: <b style="color:var(--blaek)">${!sidst || forsinket ? "med det samme" : dato(frist)}</b></p>
+      <button class="knap bred" type="submit">${f.ret ? "Gem" : "Gem og start nedtælling"}</button>
       <button class="link" type="button" data-handling="hjem">Annullér</button>
     </form>`;
 }
@@ -362,8 +380,8 @@ async function haandterScan(rå) {
 }
 function laesForm() {
   const f = S.data; if (!f) return;
-  const n = $("o-navn"), p = $("o-sted"), num = $("o-num"), en = $("o-enhed");
-  if (n) f.name = n.value; if (p) f.place = p.value;
+  const n = $("o-navn"), p = $("o-sted"), num = $("o-num"), en = $("o-enhed"), dt = $("o-dato");
+  if (n) f.name = n.value; if (p) f.place = p.value; if (dt) f.sidstDato = dt.value;
   if (num) f.num = Math.max(1, Math.min(99, parseInt(num.value, 10) || 1)); if (en) f.unit = en.value;
 }
 async function scanNfc() {
@@ -411,11 +429,17 @@ document.addEventListener("click", async (ev) => {
   if (h === "forslag") { laesForm(); S.data.name = el.dataset.v; render(); return; }
   if (h === "interval") { laesForm(); const iv = INTERVALLER[+el.dataset.k]; Object.assign(S.data, { num: iv.num, unit: iv.enhed, andet: false }); render(); return; }
   if (h === "andet") { laesForm(); S.data.andet = true; render(); return; }
-  if (h === "sidst") { laesForm(); S.data.sidst = el.dataset.v; render(); return; }
+  if (h === "sidst") {
+    laesForm(); S.data.sidst = el.dataset.v;
+    if (S.data.sidst === "dato" && !S.data.sidstDato) S.data.sidstDato = isoDato(Date.now() - DAG);
+    render();
+    if (S.data.sidst === "dato") { const d = $("o-dato"); try { d?.showPicker?.(); } catch (e) {} }
+    return;
+  }
   if (h === "klaret-nu") { const o = S.lager.opgaver().find((x) => x.id === id); lukArk(); if (o) await registrer(o, "knap"); return; }
   if (h === "ret") {
     const o = S.lager.opgaver().find((x) => x.id === id); lukArk(); if (!o) return;
-    S.visning = "nyt"; S.data = { id: o.id, name: o.name, place: o.place || "", num: o.num, unit: o.unit, andet: !INTERVALLER.some((iv) => iv.num === o.num && iv.enhed === o.unit), sidst: o.lastDone ? "i-dag" : "ved-ikke", ret: true, opgave: o };
+    S.visning = "nyt"; S.data = { id: o.id, name: o.name, place: o.place || "", num: o.num, unit: o.unit, andet: !INTERVALLER.some((iv) => iv.num === o.num && iv.enhed === o.unit), sidst: o.lastDone ? "dato" : "ved-ikke", sidstDato: o.lastDone ? isoDato(o.lastDone) : "", ret: true, opgave: o };
     return render();
   }
   if (h === "slet") {
@@ -459,13 +483,23 @@ document.addEventListener("submit", async (ev) => {
     laesForm();
     const f = S.data, navn = f.name.trim();
     if (!navn) { besked("Skriv hvad mærket skal huske"); return; }
+    const sidst = formSidst(f);
+    if (f.sidst === "dato" && !sidst) { besked("Vælg en dato"); return; }
+    if (sidst && dagStart(sidst) > dagStart(Date.now())) { besked("Datoen kan ikke ligge i fremtiden"); return; }
     try {
       if (f.ret) {
-        const o = f.opgave;
-        await S.lager.opdaterOpgave(f.id, { name: navn, place: f.place.trim(), num: f.num, unit: f.unit, dueAt: o.lastDone ? laegTil(o.lastDone, f.num, f.unit) : Date.now() });
+        const o = f.opgave, aendret = sidst !== (o.lastDone || null);
+        const patch = { name: navn, place: f.place.trim(), num: f.num, unit: f.unit, dueAt: sidst ? laegTil(sidst, f.num, f.unit) : Date.now() };
+        if (aendret) {
+          // Den gamle seneste registrering erstattes af den nye dato. Ældre historik bevares.
+          const resten = (o.history || []).filter((h) => h.at !== o.lastDone);
+          Object.assign(patch, { lastDone: sidst, lastBy: sidst ? S.lager.uid : null, lastNotified: null,
+            history: sidst ? [{ at: sidst, by: S.lager.uid }, ...resten].sort((a, b) => b.at - a.at).slice(0, 10) : resten });
+        }
+        await S.lager.opdaterOpgave(f.id, patch);
         besked("Gemt");
       } else {
-        const nu = Date.now(), sidst = f.sidst === "i-dag" ? nu : null;
+        const nu = Date.now();
         await S.lager.gemOpgave({ id: f.id, name: navn, place: f.place.trim(), num: f.num, unit: f.unit, lastDone: sidst, lastBy: sidst ? S.lager.uid : null,
           history: sidst ? [{ at: sidst, by: S.lager.uid }] : [], createdAt: nu, dueAt: sidst ? laegTil(sidst, f.num, f.unit) : nu, lastNotified: null });
         ding(); besked("Mærket er klar");
@@ -475,6 +509,7 @@ document.addEventListener("submit", async (ev) => {
   }
 });
 document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") lukArk(); });
+document.addEventListener("change", (ev) => { if (ev.target.id === "o-dato" && S.visning === "nyt") { laesForm(); render(); } });
 
 /* ---------- Opstart ---------- */
 function efterStart() {
