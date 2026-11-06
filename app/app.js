@@ -161,6 +161,35 @@ class DemoLager {
   async sletOpgave(id) { delete this.data.opgaver[id]; this.gemNu(); }
   async forlad() { this.data = null; try { localStorage.removeItem("plejer-demo"); } catch (e) {} this.lyttere.forEach((f) => f()); }
   async slaaPushTil() { throw new Error("Påmindelser på tværs af telefoner kræver Firebase."); }
+  // Fylder demoen med en husstand og nogle opgaver i forskellige stadier, så der er noget at se på.
+  fyldDemo() {
+    const nu = Date.now(), d = (n) => nu - n * DAG;
+    const opg = (id, name, place, num, unit, sidst, by, owner) => ({
+      id, name, place, num, unit, owner, icon: null, createdAt: d(120), lastNotified: null,
+      lastDone: sidst, lastBy: sidst ? by : null, history: sidst ? [{ at: sidst, by }] : [], dueAt: sidst ? laegTil(sidst, num, unit) : nu
+    });
+    const liste = [
+      opg("A1-DEMO", "Afkalk elkedel", "Køkken", 1, "m", d(34), "anna", null),
+      opg("A2-DEMO", "Skift sengetøj", "Soveværelse", 2, "w", d(11), "demo", "demo"),
+      opg("A3-DEMO", "Rens afløb", "Badeværelse", 1, "m", d(27), "ida", "ida"),
+      opg("A4-DEMO", "Test røgalarm", "Gang", 3, "m", d(40), "demo", null),
+      opg("A5-DEMO", "Rens emhættefilter", "Køkken", 3, "m", d(70), "anna", "anna"),
+      opg("A6-DEMO", "Vand planterne", "Stue", 1, "w", d(2), "ida", null)
+    ];
+    this.data = { navn: "Demohjemmet", invitation: "DEMO00", opgaver: Object.fromEntries(liste.map((o) => [o.id, o])),
+      medlemmer: { demo: { name: "Dig" }, anna: { name: "Anna" }, ida: { name: "Ida" } } };
+    this.gemNu();
+  }
+}
+const iDemo = () => hent("plejer-tilstand") === "demo";
+function startDemo() {
+  gem("plejer-tilstand", "demo");
+  const l = new DemoLager(); l.fyldDemo();
+  location.replace(location.pathname);
+}
+function afslutDemo() {
+  try { localStorage.removeItem("plejer-tilstand"); localStorage.removeItem("plejer-demo"); } catch (e) {}
+  location.replace(location.pathname);
 }
 
 /* ---------- Lager: Firebase ---------- */
@@ -328,6 +357,7 @@ function visStart() {
       <div class="felt"><label for="dit-navn-2">Dit navn</label><input id="dit-navn-2" maxlength="30" autocomplete="given-name" required ${demo ? "disabled" : ""}></div>
       <button class="knap sek bred" type="submit" ${demo ? "disabled" : ""}>Deltag</button>
     </form>
+    ${demo ? "" : `<div class="kort"><h2>Bare se, hvordan det virker?</h2><p class="daempet">Demoen har en husstand med opgaver i forvejen. Intet bliver gemt i skyen, og du kan afslutte den igen.</p><button class="knap sek bred" data-handling="demo">Prøv demoen</button></div>`}
   </div>`;
 }
 function visHjem() {
@@ -342,7 +372,9 @@ function visHjem() {
   let html = `<header class="top"><div><h1>${esc(h.navn)}</h1>
     <div class="sum">${alle.length ? `<span class="${over.length ? "over" : ""}">${over.length} over tid</span> · ${uge.length} denne uge · ${senere.length} senere` : "Ingen opgaver endnu"}</div></div>
     <button class="ikonknap" data-handling="indstillinger" aria-label="Husstand og indstillinger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></button></header>`;
-  if (S.lager.demo) html += '<div class="banner note"><p>Demotilstand. Data ligger kun på denne telefon.</p></div>';
+  if (S.lager.demo) html += S.firebase
+    ? '<div class="banner note"><p><b>Demo.</b> Data ligger kun på denne telefon.</p><button class="knap sek" data-handling="afslut-demo">Afslut demo</button></div>'
+    : '<div class="banner note"><p>Demotilstand. Data ligger kun på denne telefon.</p></div>';
   if (over.length) html += `<div class="banner alarm${S.lyd ? " ringer" : ""}"><p><b>${over.length === 1 ? "1 ting er" : over.length + " ting er"} over tid.</b> ${S.lyd ? "Appen bipper, indtil mærket er scannet." : "Slå lyd til, så bipper appen, mens den er åben."}</p><button class="knap" data-handling="lyd">${S.lyd ? "Slå lyd fra" : "Slå lyd til"}</button></div>`;
   if (!alle.length) {
     html += `<div class="kort"><h2>Scan jeres første mærke</h2><p class="daempet">Hold telefonen hen til et Plejer-mærke. Så spørger appen, hvad det skal huske.</p></div>`;
@@ -456,10 +488,10 @@ function visOpgaveArk(id) {
 function visIndstillinger() {
   const h = S.lager.husstand(), m = S.lager.medlemmer();
   aabnArk(`<h2>${esc(h?.navn || "Husstand")}</h2>
-    ${S.lager.demo ? '<p class="daempet">Demotilstand. Når appen er koblet til Firebase, kan resten af husstanden deltage med en kode.</p>' : `<span class="etiket">Kode til resten af husstanden</span><div class="kode" id="kode-vis">${esc(h?.invitation || "")}</div><button class="knap sek bred" data-handling="kopier">Kopiér koden</button>`}
+    ${S.lager.demo ? `<p class="daempet">${S.firebase ? "Det her er en demo. Afslut den for at oprette jeres egen husstand og invitere resten med en kode." : "Demotilstand. Når appen er koblet til Firebase, kan resten af husstanden deltage med en kode."}</p>` : `<span class="etiket">Kode til resten af husstanden</span><div class="kode" id="kode-vis">${esc(h?.invitation || "")}</div><button class="knap sek bred" data-handling="kopier">Kopiér koden</button>`}
     <span class="etiket">Medlemmer</span><div class="medlemmer">${Object.entries(m).map(([uid, x]) => `<div><span>${esc(x.name)}</span><span class="daempet">${uid === S.lager.uid ? "dig" : ""}</span></div>`).join("")}</div>
     ${S.lager.demo ? "" : `<button class="knap bred" data-handling="push">${hent("plejer-push") ? "Påmindelser er slået til" : "Slå påmindelser til"}</button>`}
-    <button class="knap sek bred" data-handling="forlad">Forlad husstanden</button>
+    ${S.lager.demo && S.firebase ? '<button class="knap bred" data-handling="afslut-demo">Afslut demoen</button>' : '<button class="knap sek bred" data-handling="forlad">Forlad husstanden</button>'}
     <button class="link" data-handling="luk">Luk</button>`);
 }
 
@@ -523,6 +555,8 @@ document.addEventListener("click", async (ev) => {
   const el = ev.target.closest("[data-handling]"); if (!el) return;
   const h = el.dataset.handling, id = el.dataset.id;
   if (h === "luk") return lukArk();
+  if (h === "demo") return startDemo();
+  if (h === "afslut-demo") return afslutDemo();
   if (h === "hjem") { lukArk(); S.visning = "hjem"; S.data = null; return render(); }
   if (h === "vis") return visOpgaveArk(id);
   if (h === "indstillinger") return visIndstillinger();
@@ -635,7 +669,11 @@ function efterStart() {
   try { navigator.serviceWorker?.register("sw.js").catch(() => {}); } catch (e) {}
   if (S.scan) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
   const ops = self.PLEJER_FIREBASE;
-  S.lager = ops && ops.config ? new FirebaseLager(ops) : new DemoLager();
+  S.firebase = !!(ops && ops.config);
+  // plejer.dk/app/?demo åbner demoen direkte, fx fra hjemmesiden.
+  if (S.firebase && p.has("demo") && !iDemo()) { startDemo(); return; }
+  S.lager = S.firebase && !iDemo() ? new FirebaseLager(ops) : new DemoLager();
+  if (S.firebase && S.lager.demo && !S.lager.data) S.lager.fyldDemo();
   try {
     const harHusstand = await S.lager.start();
     S.lager.lyt(() => { if (S.visning === "hjem") render(); });

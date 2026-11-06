@@ -65,6 +65,8 @@ p { margin: 0; }
 .banner.alarm.ringer { animation: puls 1.2s ease-in-out infinite; }
 @keyframes puls { 50% { filter: brightness(1.15); } }
 .banner.note { background: var(--flade); border: 1px dashed var(--kant); color: var(--daempet); }
+.banner.note b { color: var(--blaek); }
+.banner.note .knap { min-height: 40px; padding: 0 14px; font-size: 15px; }
 
 /* Sektioner og rækker */
 .sek-hoved { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid var(--blaek); padding-bottom: 3px; }
