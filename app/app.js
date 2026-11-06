@@ -25,6 +25,38 @@ const FORMER = {
 const FARVENAVN = { cirkel: "Blå", firkant: "Rød", trekant: "Gul", stjerne: "Grøn", hjerte: "Lilla", draabe: "Orange", maane: "Sort", lyn: "Turkis" };
 const RAEKKEFOELGE = ["cirkel", "firkant", "trekant", "stjerne", "hjerte", "draabe", "maane", "lyn"];
 
+/* Ikonbank. Ikonet vises i appen, mærkets form vises stadig i hjørnet, så man ved, hvad man skal scanne. */
+const IKONER = {
+  elkedel: ["Elkedel", '<path d="M6 19h11l-1-9H7z"/><path d="M9 10V8h5v2"/><path d="M11.5 8V6.5"/><path d="M16.2 12.5l3.3-2.5"/><path d="M5 21h13"/>'],
+  wc: ["Toilet", '<path d="M6 3h5v8H6z"/><path d="M4 11h15c0 3.5-3 6-7 6l1 4H8l1-4c-3-.8-5-3-5-6z"/>'],
+  afloeb: ["Afløb", '<circle cx="12" cy="12" r="8.5"/><path d="M8 9.5h8M7 12.5h10M8.5 15.5h7"/>'],
+  vandhane: ["Vandhane", '<path d="M3 10h10a3 3 0 0 1 3 3v2"/><path d="M8 10V6.5M5 6.5h6"/><path d="M16 18v.5M16 21v.5"/>'],
+  vask: ["Vaskemaskine", '<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="4.5"/><path d="M7 6.5h2M15 6.5h2"/>'],
+  opvask: ["Opvaskemaskine", '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 8h16M7 5.5h3"/><path d="M8 11.5v6M12 11.5v6M16 11.5v6"/>'],
+  seng: ["Seng", '<path d="M3 19V6"/><path d="M3 14h18v5"/><path d="M21 14v-1.5a3 3 0 0 0-3-3h-8V14"/><circle cx="6.5" cy="11.2" r="1.7"/>'],
+  roeg: ["Røgalarm", '<circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="1.4"/><path d="M4.8 6.5a9 9 0 0 0 0 11M19.2 6.5a9 9 0 0 1 0 11"/>'],
+  emhaette: ["Emhætte", '<path d="M9.5 3h5v5h-5z"/><path d="M9.5 8L3 15h18l-6.5-7"/><path d="M8 18.5h.01M12 18.5h.01M16 18.5h.01"/>'],
+  stoevsuger: ["Støvsuger", '<path d="M7 3l3.5 12"/><path d="M8 15h7.5a3.5 3.5 0 0 1 3.5 3.5V20H5v-1.5A3.5 3.5 0 0 1 8 15z"/><circle cx="8" cy="20" r=".6"/>'],
+  tandhjul: ["Tandhjul", '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>'],
+  plante: ["Plante", '<path d="M7 14h10l-1.5 7h-7z"/><path d="M12 14V8"/><path d="M12 9.5c0-3 2-5.5 6-5.5 0 4-2 6-6 6"/><path d="M12 11.5c0-2.2-2-4-5-4 0 3 2 4.2 5 4.2"/>'],
+  skrald: ["Skraldespand", '<path d="M4.5 7h15"/><path d="M9 7V4h6v3"/><path d="M6.5 7l1 13.5h9l1-13.5"/><path d="M10 11v6M14 11v6"/>'],
+  koel: ["Køleskab", '<rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M6 9.5h12M9 5.5v2M9 12.5v3"/>'],
+  ovn: ["Ovn", '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8.5h18"/><rect x="7" y="11.5" width="10" height="5.5" rx="1"/><path d="M7 6.2h.01M10.5 6.2h.01"/>'],
+  filter: ["Filter", '<path d="M3.5 5h17L14 12.5V19l-4 2v-8.5z"/>'],
+  paere: ["Pære", '<path d="M9 17.5h6M10 20.5h4"/><path d="M8.5 14.5a6 6 0 1 1 7 0c-.7.6-1 1.5-1 3h-5c0-1.5-.3-2.4-1-3z"/>'],
+  batteri: ["Batteri", '<rect x="2.5" y="7.5" width="16.5" height="9.5" rx="2"/><path d="M21.5 10.5v3.5"/><path d="M7 12.2h5M9.5 9.7v5"/>'],
+  radiator: ["Radiator", '<rect x="3.5" y="5" width="3.4" height="13" rx="1.7"/><rect x="8.5" y="5" width="3.4" height="13" rx="1.7"/><rect x="13.5" y="5" width="3.4" height="13" rx="1.7"/><path d="M18.5 9.5h2M18.5 14h2M5 18v2M15 18v2"/>'],
+  vindue: ["Vindue", '<rect x="4.5" y="3" width="15" height="18" rx="1"/><path d="M12 3v18M4.5 12h15"/>'],
+  bil: ["Bil", '<path d="M3 16.5v-3.5l2.2-5h13.6l2.2 5v3.5z"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/><path d="M5 13h14"/>'],
+  cykel: ["Cykel", '<circle cx="6" cy="16" r="3.8"/><circle cx="18" cy="16" r="3.8"/><path d="M6 16l4-7h5l3 7M10 9l3 7H6M13.5 6h2.5"/>'],
+  pote: ["Kæledyr", '<circle cx="8.5" cy="6.5" r="1.8"/><circle cx="15.5" cy="6.5" r="1.8"/><circle cx="4.8" cy="11" r="1.6"/><circle cx="19.2" cy="11" r="1.6"/><path d="M12 11c-3 0-5.5 3.4-5.5 5.6 0 2 2 3 5.5 2 3.5 1 5.5 0 5.5-2 0-2.2-2.5-5.6-5.5-5.6z"/>'],
+  tandboerste: ["Tandbørste", '<path d="M3.5 20.5L14 10"/><path d="M13.5 9.5l3-3 4 4-3 3z"/><path d="M15 5l1 1M17.5 4l1 1M20 6l-1-1"/>']
+};
+const FORSLAG_IKON = { Elkedel: "elkedel", Afløb: "afloeb", Vaskemaskine: "vask", Sengetøj: "seng", Røgalarm: "roeg", Emhætte: "emhaette", Støvsugerfilter: "stoevsuger", Opvaskemaskine: "opvask" };
+const ikonSti = (k) => `<g fill="none" stroke="#1E1D1A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IKONER[k][1]}</g>`;
+function ikonSvg(k, cls = "ikon-lille") {
+  return `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${IKONER[k] ? ikonSti(k) : ""}</svg>`;
+}
 function maerkeInfo(tagId) {
   const m = /^([AB])([1-8])-[A-Z0-9]{4}$/.exec(tagId || "");
   if (!m) return null;
@@ -33,20 +65,22 @@ function maerkeInfo(tagId) {
   const navn = `${FARVENAVN[form]} ${FORMER[form].navn}` + (pakke === "B" ? ", omrids" : "");
   return { pakke, nr, form, kode: pakke + nr, navn };
 }
-function symbolSvg(tagId, cls = "sym") {
+function formSvg(i) {
+  const f = FORMER[i.form];
+  return i.pakke === "B"
+    ? `<g fill="none" stroke="${f.farve}" stroke-width="${f.sw}">${f.omrids}</g>`
+    : `<g fill="${f.farve}" stroke="${f.farve}" stroke-width="0">${f.fyld}</g>`;
+}
+// Uden ikon: mærkets form i midten. Med ikon: ikonet i midten og mærkets form i hjørnet.
+function symbolSvg(tagId, cls = "sym", ikon = null) {
   const i = maerkeInfo(tagId);
-  const f = i ? FORMER[i.form] : null;
-  const ring = "";
-  let form = "";
-  if (f) {
-    const indre = i.pakke === "B"
-      ? `<g fill="none" stroke="${f.farve}" stroke-width="${f.sw}">${f.omrids}</g>`
-      : `<g fill="${f.farve}" stroke="${f.farve}" stroke-width="0">${f.fyld}</g>`;
-    form = `<g transform="translate(26 22) scale(.48)">${indre}</g>`;
-  } else {
-    form = '<circle cx="50" cy="46" r="18" fill="#A39B88"/>';
+  const bund = '<circle cx="50" cy="50" r="48" fill="#fff" stroke="#E3DDCC" stroke-width="1.5"/>';
+  if (ikon && IKONER[ikon]) {
+    const hjoerne = i ? `<circle cx="78" cy="78" r="24" fill="#fff" stroke="#E3DDCC" stroke-width="2"/><g transform="translate(60.5 60.5) scale(.35)">${formSvg(i)}</g>` : "";
+    return `<svg class="${cls}" viewBox="-2 -2 106 106" aria-hidden="true">${bund}<g transform="translate(16 14) scale(2.4)">${ikonSti(ikon)}</g>${hjoerne}</svg>`;
   }
-  return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="48" fill="#fff" stroke="#E3DDCC" stroke-width="1.5"/>${ring}${form}</svg>`;
+  const form = i ? `<g transform="translate(26 22) scale(.48)">${formSvg(i)}</g>` : '<circle cx="50" cy="46" r="18" fill="#A39B88"/>';
+  return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">${bund}${form}</svg>`;
 }
 
 /* ---------- Tid ---------- */
@@ -212,7 +246,8 @@ class FirebaseLager {
 }
 
 /* ---------- Tilstand ---------- */
-const S = { lager: null, visning: "henter", data: null, scan: null, lyd: false, sidste: null, slet: false };
+const S = { lager: null, visning: "henter", data: null, scan: null, lyd: false, sidste: null, slet: false,
+  sorter: hent("plejer-sorter") || "frist", filter: hent("plejer-filter") || "alle" };
 
 /* ---------- Visninger ---------- */
 function personNavn(uid) {
@@ -220,12 +255,58 @@ function personNavn(uid) {
   if (uid === S.lager.uid) return "dig";
   return S.lager.medlemmer()[uid]?.name || "en anden";
 }
+// Pointtilstanden (konkurrence i husstanden) har ingen hovedansvarlig. Slås til pr. husstand.
+const pointTilstand = () => !!S.lager.husstand()?.points;
+const visAnsvar = () => !pointTilstand();
+function ansvarNavn(o) {
+  if (!visAnsvar() || !o.owner) return "";
+  return o.owner === S.lager.uid ? "dig" : S.lager.medlemmer()[o.owner]?.name || "en tidligere";
+}
+const SORTERINGER = [["frist", "Frist"], ["navn", "Navn"], ["sted", "Sted"], ["ansvar", "Ansvarlig"], ["maerke", "Mærke"]];
+const alfa = (a, b) => String(a || "").localeCompare(String(b || ""), "da", { sensitivity: "base" });
+function filterValg() {
+  const v = [["alle", "Alle opgaver"], ["over", "Over tid"], ["uge", "Over tid og denne uge"]];
+  const p = [], st = [];
+  if (visAnsvar()) {
+    v.push(["mine", "Mit ansvar"], ["ingen", "Uden ansvarlig"]);
+    for (const [uid, m] of Object.entries(S.lager.medlemmer())) if (uid !== S.lager.uid) p.push(["p:" + uid, m.name]);
+  }
+  for (const sted of [...new Set(S.lager.opgaver().map((o) => (o.place || "").trim()).filter(Boolean))].sort(alfa)) st.push(["s:" + sted, sted]);
+  return { v, p, st };
+}
+function passer(x) {
+  const f = S.filter, o = x.o;
+  if (f === "over") return x.s.over;
+  if (f === "uge") return x.s.over || x.s.d <= 6;
+  if (f === "mine") return o.owner === S.lager.uid;
+  if (f === "ingen") return !o.owner;
+  if (f.startsWith("p:")) return o.owner === f.slice(2);
+  if (f.startsWith("s:")) return (o.place || "").trim() === f.slice(2);
+  return true;
+}
+function vaelgere(antal, vist) {
+  const { v, p, st } = filterValg();
+  const sort = SORTERINGER.filter(([k]) => k !== "ansvar" || visAnsvar());
+  const opt = (k, n) => `<option value="${esc(k)}"${S.filter === k ? " selected" : ""}>${esc(n)}</option>`;
+  return `<div class="vaelg">
+    <label><span>Sortér</span><select id="sorter">${sort.map(([k, n]) => `<option value="${k}"${S.sorter === k ? " selected" : ""}>${n}</option>`).join("")}</select></label>
+    <label><span>Vis</span><select id="filter">${v.map(([k, n]) => opt(k, n)).join("")}${p.length ? `<optgroup label="Ansvarlig">${p.map(([k, n]) => opt(k, n)).join("")}</optgroup>` : ""}${st.length ? `<optgroup label="Sted">${st.map(([k, n]) => opt(k, n)).join("")}</optgroup>` : ""}</select></label>
+  </div>${vist < antal ? `<p class="viser">Viser ${vist} af ${antal} <button class="link" data-handling="nulstil">Vis alle</button></p>` : ""}`;
+}
+function sektion(titel, liste) {
+  return liste.length ? `<section class="liste"><div class="sek-hoved"><h2>${esc(titel)}</h2><span>${liste.length}</span></div>${liste.map((x) => raekke(x.o)).join("")}</section>` : "";
+}
+function grupper(liste, noegle, tomNavn) {
+  const g = new Map();
+  for (const x of liste) { const k = noegle(x) || ""; if (!g.has(k)) g.set(k, []); g.get(k).push(x); }
+  return [...g.keys()].sort((a, b) => (a === "") - (b === "") || alfa(a, b)).map((k) => sektion(k || tomNavn, g.get(k))).join("");
+}
 function raekke(o) {
-  const s = status(o);
+  const s = status(o), ansvar = ansvarNavn(o);
   return `<button class="raekke ${s.klasse}" data-handling="vis" data-id="${esc(o.id)}">
     ${s.over ? '<span class="stempel">OVER TID</span>' : ""}
-    ${symbolSvg(o.id)}
-    <span class="midt"><b>${esc(o.name)}</b><span class="hvor">${o.place ? esc(o.place) + " · " : ""}${esc(intervalTekst(o.num, o.unit))}</span><span class="bar"><i style="width:${s.pct.toFixed(1)}%"></i></span></span>
+    ${symbolSvg(o.id, "sym", o.icon)}
+    <span class="midt"><b>${esc(o.name)}</b><span class="hvor">${o.place ? esc(o.place) + " · " : ""}${esc(intervalTekst(o.num, o.unit))}${ansvar ? ` · <span class="ansvar">${esc(ansvar)}</span>` : ""}</span><span class="bar"><i style="width:${s.pct.toFixed(1)}%"></i></span></span>
     <span class="frist">${esc(s.tekst)}</span>
   </button>`;
 }
@@ -253,6 +334,11 @@ function visHjem() {
   const h = S.lager.husstand() || { navn: "Hjemmet" };
   const alle = S.lager.opgaver().map((o) => ({ o, s: status(o) })).sort((a, b) => a.s.frist - b.s.frist);
   const over = alle.filter((x) => x.s.over), uge = alle.filter((x) => !x.s.over && x.s.d <= 6), senere = alle.filter((x) => !x.s.over && x.s.d > 6);
+  // Et valgt filter eller en sortering, der ikke længere findes, falder tilbage til standard.
+  const { v, p, st } = filterValg();
+  if (![...v, ...p, ...st].some(([k]) => k === S.filter)) S.filter = "alle";
+  if (S.sorter === "ansvar" && !visAnsvar()) S.sorter = "frist";
+  const vist = alle.filter(passer);
   let html = `<header class="top"><div><h1>${esc(h.navn)}</h1>
     <div class="sum">${alle.length ? `<span class="${over.length ? "over" : ""}">${over.length} over tid</span> · ${uge.length} denne uge · ${senere.length} senere` : "Ingen opgaver endnu"}</div></div>
     <button class="ikonknap" data-handling="indstillinger" aria-label="Husstand og indstillinger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></button></header>`;
@@ -261,11 +347,21 @@ function visHjem() {
   if (!alle.length) {
     html += `<div class="kort"><h2>Scan jeres første mærke</h2><p class="daempet">Hold telefonen hen til et Plejer-mærke. Så spørger appen, hvad det skal huske.</p></div>`;
   }
-  if (over.length) html += `<section class="liste"><div class="sek-hoved"><h2>Over tid</h2><span>${over.length}</span></div>${over.map((x) => raekke(x.o)).join("")}</section>`;
-  if (uge.length) {
-    html += `<section class="liste"><div class="sek-hoved"><h2>Denne uge</h2><span>${uge.length}</span></div>`;
+  if (alle.length > 1) html += vaelgere(alle.length, vist.length);
+  if (alle.length && !vist.length) html += '<div class="kort"><p class="daempet">Ingen opgaver passer til det valgte.</p></div>';
+  if (S.sorter !== "frist") {
+    if (S.sorter === "navn") html += sektion("Alle opgaver", [...vist].sort((a, b) => alfa(a.o.name, b.o.name)));
+    else if (S.sorter === "maerke") html += sektion("Efter mærke", [...vist].sort((a, b) => a.o.id.localeCompare(b.o.id)));
+    else if (S.sorter === "sted") html += grupper(vist, (x) => (x.o.place || "").trim(), "Uden sted");
+    else if (S.sorter === "ansvar") html += grupper(vist, (x) => ansvarNavn(x.o).replace(/^dig$/, "Dig"), "Ingen ansvarlig");
+    return html + bundKnapper();
+  }
+  const vOver = over.filter(passer), vUge = uge.filter(passer), vSenere = senere.filter(passer);
+  html += sektion("Over tid", vOver);
+  if (vUge.length) {
+    html += `<section class="liste"><div class="sek-hoved"><h2>Denne uge</h2><span>${vUge.length}</span></div>`;
     let sidst = null;
-    for (const x of uge) {
+    for (const x of vUge) {
       if (x.s.d !== sidst) {
         sidst = x.s.d;
         const lbl = x.s.d === 0 ? "I dag" : x.s.d === 1 ? "I morgen" : `${UGEDAGE[new Date(x.s.frist).getDay()]} ${dato(x.s.frist)}`;
@@ -275,8 +371,11 @@ function visHjem() {
     }
     html += "</section>";
   }
-  if (senere.length) html += `<section class="liste"><div class="sek-hoved"><h2>Senere</h2><span>${senere.length}</span></div>${senere.map((x) => raekke(x.o)).join("")}</section>`;
-  html += '<div class="bund-knapper">';
+  html += sektion("Senere", vSenere);
+  return html + bundKnapper();
+}
+function bundKnapper() {
+  let html = '<div class="bund-knapper">';
   if ("NDEFReader" in window) html += '<button class="knap bred" data-handling="nfc">Scan mærke</button>';
   else html += '<p class="daempet" style="text-align:center;font-size:15px">Hold telefonen hen til et mærke for at scanne.</p>';
   if (S.lager.demo) html += '<button class="knap sek bred" data-handling="proev">Prøv et mærke</button>';
@@ -289,13 +388,16 @@ function visNyt() {
   const forsinket = sidst && frist <= Date.now();
   return `<div class="maerke-top">
       <span class="etiket">${f.ret ? "Ret opgave" : "Nyt mærke fundet"}</span>
-      ${symbolSvg(f.id, "stor")}
-      <span class="navn">${esc(info.navn)}</span><span class="mono daempet">${esc(info.kode)}</span>
+      ${symbolSvg(f.id, "stor", f.icon)}
+      <span class="navn">${esc(info.navn)}</span><span class="mono daempet">${f.icon ? "Scannes på dette mærke · " : ""}${esc(info.kode)}</span>
     </div>
     <form id="nyt-form" class="kort">
       <div class="felt"><label for="o-navn">Hvad skal den huske?</label><input id="o-navn" maxlength="50" value="${esc(f.name)}" placeholder="Afkalk elkedel" required></div>
       <div class="chips">${FORSLAG.map((n) => `<button type="button" class="chip" data-handling="forslag" data-v="${esc(n)}" aria-pressed="${f.name === n}">${esc(n)}</button>`).join("")}</div>
       <div class="felt"><label for="o-sted">Hvor (valgfrit)</label><input id="o-sted" maxlength="40" value="${esc(f.place)}" placeholder="Køkken"></div>
+      <div class="felt"><span class="etiket">Ikon i appen</span>
+        <div class="ikoner"><button type="button" data-handling="ikon" data-v="" aria-pressed="${!f.icon}" aria-label="Mærkets form">${symbolSvg(f.id, "ikon-lille")}</button>${Object.entries(IKONER).map(([k, [navn]]) => `<button type="button" data-handling="ikon" data-v="${k}" aria-pressed="${f.icon === k}" aria-label="${esc(navn)}" title="${esc(navn)}">${ikonSvg(k)}</button>`).join("")}</div>
+        <p class="hjaelp">Mærkets form bliver ved med at stå i hjørnet, så man kan se, hvilket mærke der skal scannes.</p></div>
       <div class="felt"><span class="etiket">Hvor tit?</span>
         <div class="seg">${INTERVALLER.map((iv, k) => `<button type="button" data-handling="interval" data-k="${k}" aria-pressed="${!f.andet && iv.num === f.num && iv.enhed === f.unit}">${iv.navn}</button>`).join("")}<button type="button" data-handling="andet" aria-pressed="${f.andet}">Andet</button></div>
       </div>
@@ -305,6 +407,9 @@ function visNyt() {
         <div class="seg"><button type="button" data-handling="sidst" data-v="i-dag" aria-pressed="${f.sidst === "i-dag"}">I dag</button><button type="button" data-handling="sidst" data-v="dato" aria-pressed="${f.sidst === "dato"}">Vælg dato</button><button type="button" data-handling="sidst" data-v="ved-ikke" aria-pressed="${f.sidst === "ved-ikke"}">Ved ikke</button></div>
       </div>
       ${f.sidst === "dato" ? `<div class="felt"><label for="o-dato">Dato</label><input id="o-dato" type="date" value="${esc(f.sidstDato || "")}" max="${isoDato(Date.now())}" required></div>` : ""}
+      ${visAnsvar() ? `<div class="felt"><span class="etiket">Hovedansvarlig</span>
+        <div class="chips"><button type="button" class="chip" data-handling="ansvar" data-v="" aria-pressed="${!f.owner}">Ingen</button>${Object.entries(S.lager.medlemmer()).map(([uid, m]) => `<button type="button" class="chip" data-handling="ansvar" data-v="${esc(uid)}" aria-pressed="${f.owner === uid}">${esc(m.name)}${uid === S.lager.uid ? " (dig)" : ""}</button>`).join("")}</div>
+        <p class="hjaelp">Alle kan stadig scanne. Den ansvarlige har bare hovedansvaret.</p></div>` : ""}
       <p class="daempet">${f.ret ? "Næste påmindelse" : "Første påmindelse"}: <b style="color:var(--blaek)">${!sidst || forsinket ? "med det samme" : dato(frist)}</b></p>
       <button class="knap bred" type="submit">${f.ret ? "Gem" : "Gem og start nedtælling"}</button>
       <button class="link" type="button" data-handling="hjem">Annullér</button>
@@ -316,7 +421,7 @@ function visKlaret() {
   const historik = (o.history || []).slice(0, 4);
   return `<div class="maerke-top">
       <span class="etiket">Mærke scannet · ${new Date().toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })}</span>
-      ${symbolSvg(o.id, "stor")}
+      ${symbolSvg(o.id, "stor", o.icon)}
       <span class="klaret-ord">${S.data.allerede ? "Allerede" : "Klaret"}</span>
       <b style="font-size:22px">${esc(o.name)}</b>
     </div>
@@ -341,8 +446,9 @@ function aabnArk(html) {
 function visOpgaveArk(id) {
   const o = S.lager.opgaver().find((x) => x.id === id); if (!o) return;
   const s = status(o);
-  aabnArk(`<div style="display:flex;gap:14px;align-items:center">${symbolSvg(o.id, "sym")}<div><h2>${esc(o.name)}</h2><p class="daempet">${o.place ? esc(o.place) + " · " : ""}${esc(intervalTekst(o.num, o.unit))} · ${esc(maerkeInfo(o.id)?.navn || "")}</p></div></div>
+  aabnArk(`<div style="display:flex;gap:14px;align-items:center">${symbolSvg(o.id, "sym", o.icon)}<div><h2>${esc(o.name)}</h2><p class="daempet">${o.place ? esc(o.place) + " · " : ""}${esc(intervalTekst(o.num, o.unit))} · ${esc(maerkeInfo(o.id)?.navn || "")}</p></div></div>
     <p>Næste gang: <b>${dato(s.frist)}</b> (${esc(s.tekst.toLowerCase())})</p>
+    ${ansvarNavn(o) ? `<p>Hovedansvarlig: <b>${esc(ansvarNavn(o) === "dig" ? "Dig" : ansvarNavn(o))}</b></p>` : ""}
     ${(o.history || []).length ? `<div class="historik">${o.history.slice(0, 5).map((h) => `<div><span>${dato(h.at)}</span><span class="daempet">${esc(personNavn(h.by))}</span></div>`).join("")}</div>` : ""}
     <button class="knap bred" data-handling="klaret-nu" data-id="${esc(o.id)}">Klaret nu</button>
     <div class="raek"><button class="knap sek" data-handling="ret" data-id="${esc(o.id)}">Ret</button><button class="knap sek" data-handling="slet" data-id="${esc(o.id)}">Slet</button></div>`);
@@ -376,7 +482,7 @@ async function haandterScan(rå) {
   if (S.lager.opgaverKlar) await Promise.race([S.lager.opgaverKlar, new Promise((ok) => setTimeout(ok, 6000))]);
   const o = S.lager.opgaver().find((x) => x.id === id);
   if (o) return registrer(o, "scan");
-  S.visning = "nyt"; S.data = { id, name: "", place: "", num: 1, unit: "m", andet: false, sidst: "i-dag" }; render();
+  S.visning = "nyt"; S.data = { id, name: "", place: "", num: 1, unit: "m", andet: false, sidst: "i-dag", owner: null, icon: null }; render();
 }
 function laesForm() {
   const f = S.data; if (!f) return;
@@ -426,9 +532,12 @@ document.addEventListener("click", async (ev) => {
     const kode = ["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "B1", "B2", "B3", "B4"].find((k) => !brugt.has(k)) || "A1";
     return haandterScan(`${kode}-${tilfaeldig(4)}`);
   }
-  if (h === "forslag") { laesForm(); S.data.name = el.dataset.v; render(); return; }
+  if (h === "forslag") { laesForm(); S.data.name = el.dataset.v; if (!S.data.ikonValgt && FORSLAG_IKON[el.dataset.v]) S.data.icon = FORSLAG_IKON[el.dataset.v]; render(); return; }
+  if (h === "ikon") { laesForm(); S.data.icon = el.dataset.v || null; S.data.ikonValgt = true; render(); return; }
   if (h === "interval") { laesForm(); const iv = INTERVALLER[+el.dataset.k]; Object.assign(S.data, { num: iv.num, unit: iv.enhed, andet: false }); render(); return; }
   if (h === "andet") { laesForm(); S.data.andet = true; render(); return; }
+  if (h === "ansvar") { laesForm(); S.data.owner = el.dataset.v || null; render(); return; }
+  if (h === "nulstil") { S.filter = "alle"; gem("plejer-filter", "alle"); return render(); }
   if (h === "sidst") {
     laesForm(); S.data.sidst = el.dataset.v;
     if (S.data.sidst === "dato" && !S.data.sidstDato) S.data.sidstDato = isoDato(Date.now() - DAG);
@@ -439,7 +548,7 @@ document.addEventListener("click", async (ev) => {
   if (h === "klaret-nu") { const o = S.lager.opgaver().find((x) => x.id === id); lukArk(); if (o) await registrer(o, "knap"); return; }
   if (h === "ret") {
     const o = S.lager.opgaver().find((x) => x.id === id); lukArk(); if (!o) return;
-    S.visning = "nyt"; S.data = { id: o.id, name: o.name, place: o.place || "", num: o.num, unit: o.unit, andet: !INTERVALLER.some((iv) => iv.num === o.num && iv.enhed === o.unit), sidst: o.lastDone ? "dato" : "ved-ikke", sidstDato: o.lastDone ? isoDato(o.lastDone) : "", ret: true, opgave: o };
+    S.visning = "nyt"; S.data = { id: o.id, name: o.name, place: o.place || "", num: o.num, unit: o.unit, andet: !INTERVALLER.some((iv) => iv.num === o.num && iv.enhed === o.unit), sidst: o.lastDone ? "dato" : "ved-ikke", sidstDato: o.lastDone ? isoDato(o.lastDone) : "", owner: o.owner || null, icon: o.icon || null, ikonValgt: !!o.icon, ret: true, opgave: o };
     return render();
   }
   if (h === "slet") {
@@ -489,7 +598,7 @@ document.addEventListener("submit", async (ev) => {
     try {
       if (f.ret) {
         const o = f.opgave, aendret = sidst !== (o.lastDone || null);
-        const patch = { name: navn, place: f.place.trim(), num: f.num, unit: f.unit, dueAt: sidst ? laegTil(sidst, f.num, f.unit) : Date.now() };
+        const patch = { name: navn, place: f.place.trim(), num: f.num, unit: f.unit, owner: f.owner || null, icon: f.icon || null, dueAt: sidst ? laegTil(sidst, f.num, f.unit) : Date.now() };
         if (aendret) {
           // Den gamle seneste registrering erstattes af den nye dato. Ældre historik bevares.
           const resten = (o.history || []).filter((h) => h.at !== o.lastDone);
@@ -500,7 +609,7 @@ document.addEventListener("submit", async (ev) => {
         besked("Gemt");
       } else {
         const nu = Date.now();
-        await S.lager.gemOpgave({ id: f.id, name: navn, place: f.place.trim(), num: f.num, unit: f.unit, lastDone: sidst, lastBy: sidst ? S.lager.uid : null,
+        await S.lager.gemOpgave({ id: f.id, name: navn, place: f.place.trim(), num: f.num, unit: f.unit, owner: f.owner || null, icon: f.icon || null, lastDone: sidst, lastBy: sidst ? S.lager.uid : null,
           history: sidst ? [{ at: sidst, by: S.lager.uid }] : [], createdAt: nu, dueAt: sidst ? laegTil(sidst, f.num, f.unit) : nu, lastNotified: null });
         ding(); besked("Mærket er klar");
       }
@@ -509,7 +618,12 @@ document.addEventListener("submit", async (ev) => {
   }
 });
 document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") lukArk(); });
-document.addEventListener("change", (ev) => { if (ev.target.id === "o-dato" && S.visning === "nyt") { laesForm(); render(); } });
+document.addEventListener("change", (ev) => {
+  const t = ev.target.id;
+  if (t === "o-dato" && S.visning === "nyt") { laesForm(); render(); }
+  if (t === "sorter") { S.sorter = ev.target.value; gem("plejer-sorter", S.sorter); render(); }
+  if (t === "filter") { S.filter = ev.target.value; gem("plejer-filter", S.filter); render(); }
+});
 
 /* ---------- Opstart ---------- */
 function efterStart() {

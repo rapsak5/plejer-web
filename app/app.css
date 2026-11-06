@@ -135,3 +135,19 @@ p { margin: 0; }
 #besked:not(:empty) { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 30;
   background: var(--blaek); color: var(--papir); padding: 10px 16px; border-radius: 99px; font-size: 15px; max-width: calc(100% - 32px); }
 @media (prefers-reduced-motion: reduce) { .banner.alarm.ringer { animation: none; } }
+
+/* Sortering og filtrering af listen */
+.vaelg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.vaelg label { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.vaelg label span { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--daempet); }
+.vaelg select { width: 100%; min-height: 42px; border: 1.5px solid var(--kant); border-radius: 10px; background: var(--flade); color: var(--blaek); font: inherit; font-size: 15px; padding: 0 10px; }
+.viser { font-family: var(--mono); font-size: 12px; color: var(--daempet); margin-top: -4px; display: flex; gap: 10px; align-items: baseline; }
+.viser .link { padding: 0; font-size: 12px; }
+.hvor .ansvar { font-weight: 600; color: var(--blaek); }
+.hjaelp { font-size: 13px; color: var(--daempet); margin-top: 6px; }
+
+/* Ikonbank */
+.ikoner { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.ikoner button { aspect-ratio: 1; border: 1.5px solid var(--kant); background: #fff; border-radius: 12px; padding: 7px; display: grid; place-items: center; }
+.ikoner button[aria-pressed="true"] { border-color: var(--blaek); box-shadow: 0 0 0 2px var(--blaek); }
+.ikoner svg { width: 100%; height: 100%; }
