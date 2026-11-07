@@ -288,3 +288,15 @@ main.enkel code { font-family: var(--mono); font-size: 14px; }
 .helt-billede { min-width: 0; display: grid; place-items: center; }
 .helt-billede img { width: 100%; max-width: 560px; height: auto; }
 .skaerme.telefonbilleder img { border: 0; border-radius: 0; box-shadow: none; }
+
+/* Søsterappen StemplerInd */
+.soester { background: var(--flade); border: 1px solid var(--kant); border-radius: 22px; padding: 32px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 36px; align-items: center; }
+.soester-tekst { display: flex; flex-direction: column; gap: 14px; }
+.soester-tekst h2 { font-size: clamp(26px, 3.4vw, 34px); }
+.soester-tekst p { color: var(--daempet); font-size: 18px; max-width: 36em; }
+.soester-fakta { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 15px; color: var(--daempet); }
+.soester-fakta li::before { content: "✓"; color: var(--fremhaev); font-weight: 700; margin-right: 6px; }
+.soester-kort { display: grid; place-items: center; min-width: 0; }
+.soester-kort .stempelkort { transform: rotate(2deg); background: var(--papir); }
+.soester-kort .stempelkort header b { font-family: "StemplerInd Sans", var(--sans); }
+@media (max-width: 860px) { .soester { grid-template-columns: 1fr; padding: 24px; gap: 28px; } }
