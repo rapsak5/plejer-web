@@ -1,0 +1,21 @@
+# plejer.dk
+User-agent: *
+Allow: /
+Disallow: /app/
+
+# Søgemaskiner og AI-assistenter må gerne læse og citere siden
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Bingbot
+Allow: /
+Disallow: /app/
+
+Sitemap: https://plejer.dk/sitemap.xml

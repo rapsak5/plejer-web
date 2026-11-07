@@ -1,0 +1,37 @@
+# Plejer
+
+> Plejer er NFC-mærker og en gratis app til alt det i hjemmet, der skal gøres igen og igen. Scan mærket, når det er gjort. Plejer tæller ned til næste gang og minder hele husstanden om det, indtil nogen har gjort det. Pakker fra 199 kr.
+
+Plejer udgives af AI Workshop DK, Ove Billes Vej 7, 1., 2300 København S. Kontakt: kasper@ai-workshop.dk. Senest opdateret 2026-11-07.
+
+## Sider
+- [Forside](https://plejer.dk/): Sådan virker det, mærkerne, pakker, appen og spørgsmål.
+- [Privatlivspolitik](https://plejer.dk/privatliv.html): Hvad appen gemmer, og hvor data ligger (Google Firebase i EU).
+
+## Sådan virker det
+1. Sæt mærket på, fx elkedlen, afløbet eller støvsugeren. Ét mærke for hver ting, der skal gøres igen.
+2. Scan mærket første gang, giv det et navn og vælg interval: hver uge, hver måned eller hver tredje måned.
+3. Scan, når det er gjort. Nedtællingen starter forfra, og påmindelsen forsvinder for hele husstanden.
+
+## Pakker (inkl. moms)
+- Pakke 1: 8 hvide mærker med otte former. 199 kr.
+- Pakke 2: 8 sorte mærker med otte andre former. 199 kr.
+- Samlet pakke: 16 mærker, pakke 1 og pakke 2. 349 kr.
+- Enkelte mærker til efterbestilling: 39 kr.
+Appen er gratis og har intet abonnement. Webshoppen åbner, når første parti mærker er klar.
+
+## Appen
+Fælles liste for hele husstanden, nedtælling pr. opgave, påmindelser der kommer igen, ugeplan, historik og flere opgaver på ét mærke. Virker i browseren; Android og iPhone er på vej.
+
+## Spørgsmål og svar
+- **Skal appen være åben, når jeg scanner?** Nej. Hold telefonen hen til mærket, så registrerer den det. På iPhone kommer der en lille boks øverst på skærmen, som du trykker på.
+- **Virker det på både Android og iPhone?** Ja. De fleste telefoner fra de seneste år kan læse NFC-mærker. På iPhone virker det fra iPhone XS og frem.
+- **Hvad sker der, hvis ingen scanner mærket?** Så bliver Plejer ved. Påmindelsen kommer igen, indtil nogen i husstanden har scannet mærket. Det er hele idéen.
+- **Hvordan kommer resten af husstanden med?** Du inviterer dem med en kode fra appen. Derefter ser alle den samme liste og får de samme påmindelser.
+- **Hvad koster appen?** Appen er gratis. Du betaler kun for mærkerne, én gang.
+- **Kan mærket sidde på metal?** Ikke direkte. NFC-mærker virker ikke oven på metal. Sæt mærket på håndtaget, låget eller væggen lige ved siden af.
+- **Hvad hvis jeg skal bruge mere end otte mærker?** Tag pakke 2 eller den samlede pakke. Pakke 2 er sorte mærker med otte andre former, så alle 16 kan kendes fra hinanden. Køber du to af samme pakke, kan appen godt skelne dem, men I skal selv holde styr på, hvilken blå cirkel der er hvilken.
+- **Kan ét mærke huske flere ting?** Ja. Slå det til under husstandens indstillinger i appen. Så kan opvaskemaskinens mærke fx huske både filter, salt og afspændingsmiddel. Når du scanner, vælger du, hvad du har gjort.
+
+## Søsterapp
+- [StemplerInd](https://stemplerind.dk/): Samme idé til arbejdstiden. Ét NFC-mærke ved døren stempler dig ind og ud.
