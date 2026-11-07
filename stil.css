@@ -300,3 +300,6 @@ main.enkel code { font-family: var(--mono); font-size: 14px; }
 .soester-kort .stempelkort { transform: rotate(2deg); background: var(--papir); }
 .soester-kort .stempelkort header b { font-family: "StemplerInd Sans", var(--sans); }
 @media (max-width: 860px) { .soester { grid-template-columns: 1fr; padding: 24px; gap: 28px; } }
+.pakke-titel { font-size: 19px; margin: 8px 0 18px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.pakke-titel small { font-size: 15px; font-weight: 400; color: var(--daempet); }
+.symboler + .pakke-titel { margin-top: 40px; }

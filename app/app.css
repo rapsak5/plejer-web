@@ -153,3 +153,32 @@ p { margin: 0; }
 .ikoner button { aspect-ratio: 1; border: 1.5px solid var(--kant); background: #fff; border-radius: 12px; padding: 7px; display: grid; place-items: center; }
 .ikoner button[aria-pressed="true"] { border-color: var(--blaek); box-shadow: 0 0 0 2px var(--blaek); }
 .ikoner svg { width: 100%; height: 100%; }
+
+/* Flere opgaver på ét mærke: vælg hvad der er gjort */
+.valg { display: flex; flex-direction: column; gap: 8px; }
+.valg-raekke { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--papir); border: 1.5px solid var(--kant); border-radius: 14px; padding: 12px; }
+.valg-raekke .midt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.valg-raekke b { font-size: 17px; line-height: 1.15; overflow-wrap: anywhere; }
+.valg-raekke .hvor { font-size: 13px; color: var(--daempet); }
+.valg-raekke .frist { flex-shrink: 0; font-weight: 600; font-size: 14px; text-align: right; }
+.valg-raekke.over .frist { color: var(--over); }
+.valg-raekke.snart .frist { color: var(--snart); }
+.valg-raekke[aria-pressed="true"] { border-color: var(--blaek); background: var(--flade); box-shadow: 0 0 0 1px var(--blaek); }
+.valg-raekke:disabled { opacity: .55; cursor: not-allowed; }
+.flueben { width: 26px; height: 26px; flex-shrink: 0; border-radius: 8px; border: 2px solid var(--linje); background: var(--flade); display: grid; place-items: center; }
+.valg-raekke[aria-pressed="true"] .flueben { background: var(--groen); border-color: var(--groen); }
+.valg-raekke[aria-pressed="true"] .flueben::after { content: ""; width: 7px; height: 13px; border: solid var(--groen-tekst); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+.klaret-liste { gap: 0; padding: 4px 18px; }
+.klaret-liste div { display: flex; flex-direction: column; gap: 2px; padding: 12px 0; border-top: 1px solid var(--kant); }
+.klaret-liste div:first-child { border-top: 0; }
+.klaret-liste b { font-size: 17px; }
+
+/* Kontakt (til og fra) i indstillinger */
+.kontakt { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; background: var(--papir); border: 1px solid var(--kant); border-radius: 14px; padding: 12px 14px; }
+.kontakt > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.kontakt > span .daempet { font-size: 14px; }
+.kontakt i { position: relative; width: 50px; height: 30px; flex-shrink: 0; border-radius: 99px; background: var(--linje); transition: background .15s; }
+.kontakt i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .15s; }
+.kontakt[aria-checked="true"] i { background: var(--groen); }
+.kontakt[aria-checked="true"] i::after { transform: translateX(20px); }
+@media (prefers-reduced-motion: reduce) { .kontakt i, .kontakt i::after { transition: none; } }
