@@ -353,12 +353,25 @@ function grupper(liste, noegle, tomNavn) {
   return [...g.keys()].sort((a, b) => (a === "") - (b === "") || alfa(a, b)).map((k) => sektion(k || tomNavn, g.get(k))).join("");
 }
 function raekke(o) {
-  const s = status(o);
-  return `<button class="raekke ${s.klasse}" data-handling="vis" data-id="${esc(o.id)}">
+  const s = status(o), ansvar = ansvarNavn(o), aaben = S.aaben === o.id;
+  const kontekst = [o.place, intervalTekst(o.num, o.unit), ansvar && (ansvar === "dig" ? "dit ansvar" : ansvar)].filter(Boolean).map(esc).join(" · ");
+  const sidst = o.lastDone ? `${dato(o.lastDone)} af ${esc(personNavn(o.lastBy) || "ukendt")}` : "Aldrig";
+  const andre = flereTilladt() ? opgaverPaa(tagAf(o)).filter((x) => x.id !== o.id).map((x) => esc(x.name)) : [];
+  const detaljer = aaben ? `<div class="detaljer">
+      <dl>
+        <dt>Sidst gjort</dt><dd>${sidst}</dd>
+        <dt>${s.over ? "Skulle være gjort" : "Næste gang"}</dt><dd>${UGEDAGE[new Date(s.frist).getDay()].toLowerCase()} ${dato(s.frist)}</dd>
+        ${ansvar ? `<dt>Ansvarlig</dt><dd>${esc(ansvar === "dig" ? "Dig" : ansvar)}</dd>` : ""}
+        ${andre.length ? `<dt>Samme mærke</dt><dd>${andre.join(", ")}</dd>` : ""}
+      </dl>
+      <div class="raek"><button class="knap" data-handling="klaret-nu" data-id="${esc(o.id)}">Klaret nu</button><button class="knap sek" data-handling="mere" data-id="${esc(o.id)}">Ret og mere</button></div>
+    </div>` : "";
+  return `<div class="raekke-boks${aaben ? " aaben" : ""}"><button class="raekke ${s.klasse}" data-handling="vis" data-id="${esc(o.id)}" aria-expanded="${aaben}">
     ${symbolSvg(tagAf(o), "sym", o.icon)}
-    <span class="midt"><b>${esc(o.name)}</b><span class="bar"><i style="width:${s.pct.toFixed(1)}%"></i></span></span>
+    <span class="midt"><b>${esc(o.name)}</b><span class="hvor">${kontekst}</span><span class="bar"><i style="width:${s.pct.toFixed(1)}%"></i></span></span>
     <span class="frist">${esc(s.tekst)}</span>
-  </button>`;
+    <svg class="pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+  </button>${detaljer}</div>`;
 }
 function visStart() {
   const demo = S.lager.demo;
@@ -625,7 +638,8 @@ document.addEventListener("click", async (ev) => {
   if (h === "demo") return startDemo();
   if (h === "afslut-demo") return afslutDemo();
   if (h === "hjem") { lukArk(); S.visning = "hjem"; S.data = null; return render(); }
-  if (h === "vis") return visOpgaveArk(id);
+  if (h === "vis") { S.aaben = S.aaben === id ? null : id; return render(); }
+  if (h === "mere") return visOpgaveArk(id);
   if (h === "senere") { S.visSenere = true; return render(); }
   if (h === "sorter-ark") { const n = S.lager.opgaver().length; return aabnArk(`<h2>Sortér og filtrér</h2>${vaelgere(n, n)}<button class="knap bred" data-handling="luk">Færdig</button>`); }
   if (h === "indstillinger") return visIndstillinger();
