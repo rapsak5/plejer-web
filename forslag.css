@@ -1,0 +1,93 @@
+/* Tre forslag til toppen. Altid lys. Mærke og app står før teksten på telefonen. */
+
+/* Fælles */
+.fx { padding-block: 28px 56px; }
+.fx .ramme { display: grid; gap: 22px 56px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); grid-template-areas: "tekst scene" "mere scene" "mere trin"; align-items: start; }
+.fx .fx-tekst { grid-area: tekst; display: flex; flex-direction: column; gap: 14px; align-self: end; }
+.fx .fx-scene { grid-area: scene; min-width: 0; }
+.fx .fx-mere { grid-area: mere; display: flex; flex-direction: column; gap: 20px; }
+.fx .f-trin { grid-area: trin; }
+.fx h1 { font-size: clamp(34px, 5vw, 58px); letter-spacing: -0.04em; }
+.fx h1 em { font-style: normal; color: var(--fremhaev); }
+.fx .lead { font-size: 19px; color: var(--daempet); max-width: 32em; }
+.fx .knapper { display: flex; flex-wrap: wrap; gap: 12px; }
+.fx .fakta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 15px; color: var(--daempet); }
+.fx .fakta span::before { content: "✓"; color: var(--fremhaev); font-weight: 700; margin-right: 6px; }
+.fx-scene svg { display: block; width: 100%; height: auto; }
+
+/* Tre trin som billeder, ikke tekst */
+.f-trin { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.f-trin li { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; font-weight: 600; font-size: 15px; line-height: 1.2; }
+.f-trin svg { width: 52px; height: 52px; }
+.f-trin b { font-family: var(--mono); font-weight: 500; font-size: 12px; color: var(--fremhaev); }
+
+@media (max-width: 860px) {
+  .fx { padding-block: 18px 44px; }
+  .fx .ramme { grid-template-columns: 1fr; grid-template-areas: "tekst" "scene" "trin" "mere"; gap: 16px; }
+  .fx h1 { font-size: clamp(30px, 8.6vw, 40px); }
+  .fx .etiket { display: none; }
+  .fx .fx-mere { margin-top: 8px; }
+}
+
+/* Forslag 1: lys gul scene med elkedlen */
+.f1 .fx-scene svg { filter: drop-shadow(0 18px 30px rgba(40, 32, 10, .10)); }
+
+/* Forslag 2: mærkearket */
+.f2 { background: linear-gradient(var(--flade), var(--papir)); }
+
+/* Forslag 3: animation på hvid */
+.f3 { background: var(--flade); }
+.f3 + section { border-top: 1px solid var(--kant); }
+.scene3 { position: relative; container-type: inline-size; aspect-ratio: 600 / 470; border-radius: 28px; background: var(--papir); overflow: hidden; }
+.scene3 > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tlf3 { position: absolute; left: 58%; top: 7%; width: 34%; aspect-ratio: 9 / 18.5; background: #1E1D1A; border-radius: 6.5cqw; padding: 1.4cqw; box-shadow: 0 3cqw 5cqw -2cqw rgba(40, 32, 10, .45); transform-origin: 50% 60%; animation: tlf 6s ease-in-out infinite; }
+.tlf3 .skaerm { position: relative; width: 100%; height: 100%; background: #F5F2EA; border-radius: 5.2cqw; overflow: hidden; }
+.tlf3 .skaerm::before { content: ""; position: absolute; top: 1.6cqw; left: 50%; width: 30%; height: 3cqw; border-radius: 9cqw; background: #1E1D1A; transform: translateX(-50%); z-index: 2; }
+.tilstand { position: absolute; inset: 0; padding: 7cqw 2.4cqw 2cqw; display: flex; flex-direction: column; gap: 1.6cqw; }
+.tilstand.a { animation: a 6s infinite; }
+.tilstand.b { animation: b 6s infinite; align-items: center; text-align: center; }
+.t3-titel { font-family: "StemplerInd Sans", var(--sans); font-weight: 700; font-size: 4.4cqw; letter-spacing: -0.02em; color: #1E1D1A; }
+.t3-alarm { background: #C3301C; color: #fff; font-weight: 700; font-size: 2.1cqw; border-radius: 1.6cqw; padding: 1.4cqw 1.6cqw; }
+.t3-hoved { font-size: 1.7cqw; font-weight: 700; letter-spacing: .08em; border-bottom: .35cqw solid #1E1D1A; padding-bottom: .4cqw; color: #1E1D1A; }
+.t3-raekke { background: #fff; border: .25cqw solid #E3DDCC; border-radius: 1.8cqw; padding: 1.4cqw; display: flex; gap: 1.4cqw; align-items: center; }
+.t3-raekke svg { width: 5.4cqw; height: 5.4cqw; flex-shrink: 0; }
+.t3-raekke div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .6cqw; }
+.t3-raekke b { font-size: 2.1cqw; color: #1E1D1A; line-height: 1.1; }
+.t3-raekke i { font-style: normal; font-size: 1.8cqw; font-weight: 700; color: #C3301C; }
+.t3-raekke i.ok { color: #6B665B; font-weight: 500; }
+.t3-raekke span { display: block; height: .7cqw; border-radius: .4cqw; background: #C3301C; }
+.t3-raekke span.ok { background: linear-gradient(90deg, #2E7D4F 30%, #E3DDCC 30%); }
+.tilstand.b svg { width: 13cqw; height: 13cqw; margin-top: 1cqw; }
+.t3-klaret { font-family: "StemplerInd Sans", var(--sans); font-weight: 700; font-size: 7cqw; line-height: .9; color: #2E7D4F; letter-spacing: -0.02em; }
+.t3-navn { font-weight: 700; font-size: 2.4cqw; color: #1E1D1A; }
+.t3-tal { background: #fff; border: .25cqw solid #E3DDCC; border-radius: 1.8cqw; padding: 1.4cqw 2cqw; display: flex; align-items: center; gap: 1.4cqw; margin-top: 1cqw; }
+.t3-tal b { font-family: var(--mono); font-weight: 500; font-size: 6cqw; color: #1E1D1A; }
+.t3-tal small { font-size: 1.9cqw; color: #6B665B; text-align: left; line-height: 1.2; }
+.ringe3 { animation: ringe 6s infinite; transform-origin: 30% 55%; }
+.f3 .f-trin li { opacity: .35; animation: trin 6s infinite; }
+.f3 .f-trin li:nth-child(2) { animation-name: trin2; }
+.f3 .f-trin li:nth-child(3) { animation-name: trin3; }
+
+@keyframes tlf {
+  0%, 22% { transform: translate(0, 0) rotate(8deg); }
+  36%, 48% { transform: translate(-88%, 10%) rotate(-4deg); }
+  62%, 100% { transform: translate(0, 0) rotate(8deg); }
+}
+@keyframes a { 0%, 42% { opacity: 1; } 46%, 96% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes b { 0%, 42% { opacity: 0; } 46%, 96% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes ringe { 0%, 34% { opacity: 0; } 38%, 48% { opacity: 1; } 54%, 100% { opacity: 0; } }
+@keyframes trin { 0%, 26% { opacity: 1; } 30%, 96% { opacity: .35; } 100% { opacity: 1; } }
+@keyframes trin2 { 0%, 28% { opacity: .35; } 32%, 46% { opacity: 1; } 50%, 100% { opacity: .35; } }
+@keyframes trin3 { 0%, 46% { opacity: .35; } 50%, 94% { opacity: 1; } 98%, 100% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) {
+  .tlf3 { transform: rotate(8deg); }
+  .tilstand.a { opacity: 0; }
+  .tilstand.b { opacity: 1; }
+  .ringe3 { opacity: 0; }
+  .f3 .f-trin li { opacity: 1; }
+}
+
+/* Forslagsvælger øverst, kun til gennemsyn */
+.vaelger { display: flex; gap: 6px; justify-content: center; padding: 8px; background: var(--blaek); }
+.vaelger a { color: var(--papir); text-decoration: none; font-size: 14px; font-weight: 600; padding: 6px 12px; border-radius: 999px; }
+.vaelger a[aria-current] { background: var(--groen); color: var(--blaek); }
