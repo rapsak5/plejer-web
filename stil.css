@@ -289,17 +289,123 @@ main.enkel code { font-family: var(--mono); font-size: 14px; }
 .helt-billede img { width: 100%; max-width: 560px; height: auto; }
 .skaerme.telefonbilleder img { border: 0; border-radius: 0; box-shadow: none; }
 
-/* Søsterappen StemplerInd */
-.soester { background: var(--flade); border: 1px solid var(--kant); border-radius: 22px; padding: 32px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 36px; align-items: center; }
-.soester-tekst { display: flex; flex-direction: column; gap: 14px; }
-.soester-tekst h2 { font-size: clamp(26px, 3.4vw, 34px); }
-.soester-tekst p { color: var(--daempet); font-size: 18px; max-width: 36em; }
-.soester-fakta { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 15px; color: var(--daempet); }
-.soester-fakta li::before { content: "✓"; color: var(--fremhaev); font-weight: 700; margin-right: 6px; }
-.soester-kort { display: grid; place-items: center; min-width: 0; }
-.soester-kort .stempelkort { transform: rotate(2deg); background: var(--papir); }
-.soester-kort .stempelkort header b { font-family: "StemplerInd Sans", var(--sans); }
-@media (max-width: 860px) { .soester { grid-template-columns: 1fr; padding: 24px; gap: 28px; } }
+/* Pakketitler over mærkerne */
 .pakke-titel { font-size: 19px; margin: 8px 0 18px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
 .pakke-titel small { font-size: 15px; font-weight: 400; color: var(--daempet); }
 .symboler + .pakke-titel { margin-top: 40px; }
+
+/* Mærkerne: mindre, så hver pakke står på én række på store skærme */
+.symboler { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 18px 12px; }
+.symboler figure { gap: 6px; }
+.symboler figure svg { width: min(100%, 84px); }
+.symboler figcaption { font-size: 14px; line-height: 1.25; }
+.symboler figcaption small { font-size: 12px; }
+@media (max-width: 860px) { .symboler { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .symboler { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 8px; } .symboler figure svg { width: min(100%, 68px); } .symboler figcaption { font-size: 13px; } }
+
+/* Pakkernes mærker vibrerer, når kortet kommer ind på skærmen. Klassen vibrer sættes af scriptet nederst i index.html.
+   --d forskyder kortene, --k mærkerne på kortet. Samme bevægelse som på stemplerind.dk. */
+.pakke.vibrer .gitter svg { animation: vibrer .75s cubic-bezier(.36, .07, .19, .97) both; animation-delay: calc(var(--d, 0ms) + var(--k, 0ms)); }
+@keyframes vibrer {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  12% { transform: translate(-1.5px, 0) rotate(-4deg); }
+  24% { transform: translate(1.5px, 0) rotate(4deg); }
+  36% { transform: translate(-1.5px, 0) rotate(-3deg); }
+  48% { transform: translate(1px, 0) rotate(2deg); }
+  60% { transform: translate(-.5px, 0) rotate(-1deg); }
+  72% { transform: translate(0, 0) rotate(0); }
+}
+
+/* Søsterappen: samme kort som Plejer-kortet på stemplerind.dk, her i StemplerInds blå */
+.soester { --navy: #151937; --navy-lys: #E1E6F0; --navy-tekst: #4A6A9E; position: relative; overflow: hidden; background: var(--flade); border: 1px solid var(--kant); border-radius: 24px; padding: 36px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 36px; align-items: center; }
+.soester::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 6px; background: var(--navy); }
+.soester-tekst { display: flex; flex-direction: column; gap: 14px; }
+.soester-navn { display: inline-flex; align-items: center; gap: 16px; font-family: "StemplerInd Sans", var(--sans); font-weight: 700; font-size: clamp(36px, 5vw, 52px); line-height: 1; text-decoration: none; letter-spacing: -0.03em; color: var(--navy); }
+.soester-navn img { width: clamp(52px, 6.5vw, 72px); height: auto; border-radius: 16px; }
+.soester .etiket { color: var(--navy-tekst); }
+.soester h2 { font-size: clamp(26px, 3.4vw, 34px); }
+.soester .regler { display: grid; gap: 8px; margin: 2px 0 0; padding: 0; list-style: none; }
+.soester .regler li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; }
+.soester .regler li::before { content: "→"; color: var(--navy); font-weight: 700; }
+.soester-knap { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 6px; }
+.soester-knap .knap { background: var(--navy); color: #FFFFFF; }
+.soester-billeder { display: grid; background: var(--navy-lys); border-radius: 18px; padding: 12px; }
+@media (max-width: 860px) { .soester { grid-template-columns: 1fr; padding: 28px 22px; gap: 26px; } }
+
+/* Sådan virker det: animation ved siden af trinene, som på stemplerind.dk */
+.saadan-indhold { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: center; }
+.saadan-indhold .trin { grid-template-columns: 1fr; gap: 14px; }
+.saadan-indhold .trin li { padding: 20px 22px; }
+@media (max-width: 860px) { .saadan-indhold { grid-template-columns: 1fr; gap: 28px; } }
+
+
+/* Animationer på forsiden. Markup og keyframes er kopieret fra stemplerind.dk (scripts/animationer.mjs der).
+   Scenen er 640 × 560 enheder. --u er én enhed, så alt skalerer med kolonnen. Løkkerne er 10, 8 og 12 sekunder. */
+.anim { container-type: inline-size; width: 100%; max-width: 640px; min-width: 0; justify-self: center; }
+.anim .scene { --u: calc(100cqw / 640); position: relative; width: 100%; aspect-ratio: 640 / 560; overflow: hidden; border-radius: 24px; background: var(--papir); color: var(--blaek); font-family: var(--sans); line-height: 1.3; }
+
+
+/* Døren: ind om morgenen, ud om eftermiddagen */
+.ad-telefon { animation: ad-telefon 10s cubic-bezier(.45, 0, .25, 1) infinite; }
+.ad-s1 { animation: ad-s1 10s linear infinite; }
+.ad-s2 { opacity: 0; animation: ad-s2 10s linear infinite; }
+.ad-s3 { opacity: 0; animation: ad-s3 10s linear infinite; }
+.ad-ring { opacity: 0; animation: ad-ring 10s ease-out infinite; }
+.ad-ring2 { animation-delay: .25s; }
+.ad-besked1 { opacity: 0; animation: ad-besked1 10s ease-out infinite; }
+.ad-besked2 { opacity: 0; animation: ad-besked2 10s ease-out infinite; }
+.ad-kl1 { animation: ad-kl1 10s linear infinite; }
+.ad-kl2 { opacity: 0; animation: ad-kl2 10s linear infinite; }
+.ad-skumring { opacity: 0; animation: ad-skumring 10s linear infinite; }
+@keyframes ad-telefon {
+  0% { transform: translate(calc(260 * var(--u)), calc(30 * var(--u))); opacity: 1; }
+  14%, 24% { transform: translate(0, 0); opacity: 1; }
+  38%, 54% { transform: translate(calc(-150 * var(--u)), calc(10 * var(--u))); opacity: 0; }
+  58% { transform: translate(calc(-150 * var(--u)), calc(10 * var(--u))); opacity: 1; }
+  68%, 76% { transform: translate(0, 0); opacity: 1; }
+  92%, 100% { transform: translate(calc(260 * var(--u)), calc(30 * var(--u))); opacity: 1; }
+}
+@keyframes ad-s1 { 0%, 14% { opacity: 1; } 16%, 95% { opacity: 0; } 97%, 100% { opacity: 1; } }
+@keyframes ad-s2 { 0%, 14% { opacity: 0; } 16%, 67% { opacity: 1; } 69%, 100% { opacity: 0; } }
+@keyframes ad-s3 { 0%, 67% { opacity: 0; } 69%, 95% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes ad-ring { 0%, 13% { transform: scale(.7); opacity: 0; } 15% { transform: scale(.8); opacity: .8; } 30% { transform: scale(2.6); opacity: 0; } 65% { transform: scale(.7); opacity: 0; } 67% { transform: scale(.8); opacity: .8; } 82%, 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes ad-besked1 { 0%, 15% { opacity: 0; transform: translateY(calc(8 * var(--u))); } 18%, 33% { opacity: 1; transform: translateY(0); } 37%, 100% { opacity: 0; transform: translateY(calc(-6 * var(--u))); } }
+@keyframes ad-besked2 { 0%, 67% { opacity: 0; transform: translateY(calc(8 * var(--u))); } 70%, 87% { opacity: 1; transform: translateY(0); } 91%, 100% { opacity: 0; transform: translateY(calc(-6 * var(--u))); } }
+@keyframes ad-kl1 { 0%, 45% { opacity: 1; } 49%, 95% { opacity: 0; } 99%, 100% { opacity: 1; } }
+@keyframes ad-kl2 { 0%, 45% { opacity: 0; } 49%, 95% { opacity: 1; } 99%, 100% { opacity: 0; } }
+@keyframes ad-skumring { 0%, 42% { opacity: 0; } 52%, 92% { opacity: 1; } 100% { opacity: 0; } }
+
+
+/* Plejer: over tid, scan mærket, Klaret, opgaven rykker ned */
+.pj-telefon { animation: pj-telefon 8s cubic-bezier(.45, 0, .25, 1) infinite; transform-origin: 50% 50%; }
+.pj-s1 { animation: pj-s1 8s linear infinite; }
+.pj-s2 { opacity: 0; animation: pj-s2 8s linear infinite; }
+.pj-s3 { opacity: 0; animation: pj-s3 8s linear infinite; }
+.pj-faerdig { animation: pj-faerdig 8s ease-out infinite; }
+.pj-ring { opacity: 0; animation: pj-ring 8s ease-out infinite; }
+.pj-ring2 { animation-delay: .2s; }
+.pj-ring3 { animation-delay: .4s; }
+@keyframes pj-telefon { 0%, 4% { transform: translate(0, 0) rotate(0deg); } 18%, 30% { transform: translate(calc(-250 * var(--u)), calc(30 * var(--u))) rotate(-7deg); } 44%, 100% { transform: translate(0, 0) rotate(0deg); } }
+@keyframes pj-s1 { 0%, 20% { opacity: 1; } 23%, 95% { opacity: 0; } 99%, 100% { opacity: 1; } }
+@keyframes pj-s2 { 0%, 20% { opacity: 0; } 23%, 70% { opacity: 1; } 74%, 100% { opacity: 0; } }
+@keyframes pj-s3 { 0%, 70% { opacity: 0; } 74%, 95% { opacity: 1; } 99%, 100% { opacity: 0; } }
+@keyframes pj-faerdig { 0%, 65% { transform: scale(1); } 67% { transform: scale(.94); } 70%, 100% { transform: scale(1); } }
+@keyframes pj-ring { 0%, 19% { transform: scale(.7); opacity: 0; } 21% { transform: scale(.75); opacity: .9; } 40%, 100% { transform: scale(2.1); opacity: 0; } }
+
+.anim-doer .scene { background: #EEF0F5; color: #141834; }
+
+/* Uden bevægelse: vis slutbilledet */
+@media (prefers-reduced-motion: reduce) {
+  .ad-s1, .pj-s1 { opacity: 0; }
+  .ad-s2, .ad-besked1, .pj-s2 { opacity: 1; }
+}
+
+/* Små tegninger på de tre trin, så historien kan ses og ikke kun læses */
+.trin li { position: relative; }
+.trin-ikon { position: absolute; top: 14px; right: 16px; width: 64px; height: 64px; }
+.saadan-indhold .trin li { padding-right: 96px; }
+@media (max-width: 420px) { .trin-ikon { width: 52px; height: 52px; } .saadan-indhold .trin li { padding-right: 78px; } }
+.saadan-indhold .anim .scene { background: var(--flade); border: 1px solid var(--kant); }
+.trin-ikon { width: 76px; height: 76px; top: 12px; right: 14px; }
+.saadan-indhold .trin li { padding-right: 104px; }
+@media (max-width: 420px) { .trin-ikon { width: 56px; height: 56px; } .saadan-indhold .trin li { padding-right: 80px; } }
