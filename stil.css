@@ -209,12 +209,16 @@ main.enkel code { font-family: var(--mono); font-size: 14px; }
 /* Eget design: bred kort under pakkerne */
 .eget { margin-top: 22px; background: var(--flade); border: 1px solid var(--kant); border-radius: 22px; overflow: hidden; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); align-items: center; }
 .eget img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; display: block; }
+.eget .billede { aspect-ratio: 1; height: 100%; background: var(--groen-lys); display: grid; place-items: center; padding: 28px; }
+.eget .billede .gitter { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.eget .etiket { align-self: flex-start; }
 .eget .indre { padding: 26px 30px; display: flex; flex-direction: column; gap: 12px; }
 .eget h3 { font-size: 26px; }
 .eget .pris-raekke { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .eget .pris { font-family: var(--mono); font-size: 26px; font-weight: 500; }
 .eget .pris small { font-family: var(--sans); font-size: 13px; color: var(--daempet); margin-left: 4px; }
-@media (max-width: 700px) { .eget { grid-template-columns: 1fr; } .eget img { max-height: 320px; } }
+.eget .pris small.fra { margin: 0 6px 0 0; }
+@media (max-width: 700px) { .eget { grid-template-columns: 1fr; } .eget img { max-height: 320px; } .eget .billede { aspect-ratio: auto; height: auto; padding: 26px 18px; } .eget .billede .gitter { grid-template-columns: repeat(4, minmax(0, 1fr)); width: 86%; } }
 
 /* Kontaktformular */
 .kontakt { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 36px; align-items: start; }
