@@ -182,3 +182,22 @@ p { margin: 0; }
 .kontakt[aria-checked="true"] i { background: var(--groen); }
 .kontakt[aria-checked="true"] i::after { transform: translateX(20px); }
 @media (prefers-reduced-motion: reduce) { .kontakt i, .kontakt i::after { transition: none; } }
+
+/* Enklere forside */
+.top-knapper { display: flex; gap: 8px; }
+.ikonknap.til { background: var(--over); color: #fff; border-color: var(--over); }
+.sum { font-family: var(--sans); font-size: 15px; margin-top: 8px; }
+.sum .over { font-weight: 700; }
+.demo-linje { font-size: 13px; color: var(--daempet); margin-top: -6px; }
+.demo-linje .link { padding: 0; font-size: 13px; }
+h2.sek { font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--daempet); margin-bottom: 6px; }
+.gruppe { background: var(--flade); border: 1px solid var(--kant); border-radius: 16px; overflow: hidden; }
+.gruppe .raekke { border: 0; border-radius: 0; background: none; padding: 12px 14px; }
+.gruppe .raekke + .raekke { border-top: 1px solid var(--kant); }
+.raekke .sym { width: 36px; height: 36px; }
+.raekke .midt { gap: 7px; }
+.raekke .bar { height: 3px; }
+.raekke .frist { width: auto; font-size: 15px; }
+.raekke.ok .frist { color: var(--daempet); font-weight: 500; }
+.flere { width: 100%; padding: 14px; border: 1px dashed var(--kant); border-radius: 16px; background: none; color: var(--daempet); font: inherit; font-size: 15px; }
+.bund-knapper .link { align-self: center; color: var(--daempet); font-size: 14px; }

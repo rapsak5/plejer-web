@@ -345,7 +345,7 @@ function vaelgere(antal, vist) {
   </div>${vist < antal ? `<p class="viser">Viser ${vist} af ${antal} <button class="link" data-handling="nulstil">Vis alle</button></p>` : ""}`;
 }
 function sektion(titel, liste) {
-  return liste.length ? `<section class="liste"><div class="sek-hoved"><h2>${esc(titel)}</h2><span>${liste.length}</span></div>${liste.map((x) => raekke(x.o)).join("")}</section>` : "";
+  return liste.length ? `<section class="liste"><h2 class="sek">${esc(titel)}</h2><div class="gruppe">${liste.map((x) => raekke(x.o)).join("")}</div></section>` : "";
 }
 function grupper(liste, noegle, tomNavn) {
   const g = new Map();
@@ -353,11 +353,10 @@ function grupper(liste, noegle, tomNavn) {
   return [...g.keys()].sort((a, b) => (a === "") - (b === "") || alfa(a, b)).map((k) => sektion(k || tomNavn, g.get(k))).join("");
 }
 function raekke(o) {
-  const s = status(o), ansvar = ansvarNavn(o);
+  const s = status(o);
   return `<button class="raekke ${s.klasse}" data-handling="vis" data-id="${esc(o.id)}">
-    ${s.over ? '<span class="stempel">OVER TID</span>' : ""}
     ${symbolSvg(tagAf(o), "sym", o.icon)}
-    <span class="midt"><b>${esc(o.name)}</b><span class="hvor">${o.place ? esc(o.place) + " · " : ""}${esc(intervalTekst(o.num, o.unit))}${ansvar ? ` · <span class="ansvar">${esc(ansvar)}</span>` : ""}</span><span class="bar"><i style="width:${s.pct.toFixed(1)}%"></i></span></span>
+    <span class="midt"><b>${esc(o.name)}</b><span class="bar"><i style="width:${s.pct.toFixed(1)}%"></i></span></span>
     <span class="frist">${esc(s.tekst)}</span>
   </button>`;
 }
@@ -391,48 +390,42 @@ function visHjem() {
   if (![...v, ...p, ...st].some(([k]) => k === S.filter)) S.filter = "alle";
   if (S.sorter === "ansvar" && !visAnsvar()) S.sorter = "frist";
   const vist = alle.filter(passer);
-  let html = `<header class="top"><div><h1>${esc(h.navn)}</h1>
-    <div class="sum">${alle.length ? `<span class="${over.length ? "over" : ""}">${over.length} over tid</span> · ${uge.length} denne uge · ${senere.length} senere` : "Ingen opgaver endnu"}</div></div>
-    <button class="ikonknap" data-handling="indstillinger" aria-label="Husstand og indstillinger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></button></header>`;
+  const lydKnap = over.length ? `<button class="ikonknap${S.lyd ? " til" : ""}" data-handling="lyd" aria-label="${S.lyd ? "Slå lyd fra" : "Slå lyd til"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>${S.lyd ? "" : '<path d="M3 3l18 18"/>'}</svg></button>` : "";
+  const naeste = alle.find((x) => !x.s.over);
+  const sum = !alle.length ? "Ingen opgaver endnu" : over.length ? `<span class="over">${over.length} over tid</span>` : naeste ? `Alt er klaret. Næste: ${esc(naeste.o.name.toLowerCase())} ${esc(naeste.s.tekst.toLowerCase())}` : "";
+  let html = `<header class="top"><div><h1>${esc(h.navn)}</h1><div class="sum">${sum}</div></div>
+    <div class="top-knapper">${lydKnap}<button class="ikonknap" data-handling="indstillinger" aria-label="Husstand og indstillinger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></button></div></header>`;
   if (S.lager.demo) html += S.firebase
-    ? '<div class="banner note"><p><b>Demo.</b> Data ligger kun på denne telefon.</p><button class="knap sek" data-handling="afslut-demo">Afslut demo</button></div>'
-    : '<div class="banner note"><p>Demotilstand. Data ligger kun på denne telefon.</p></div>';
-  if (over.length) html += `<div class="banner alarm${S.lyd ? " ringer" : ""}"><p><b>${over.length === 1 ? "1 ting er" : over.length + " ting er"} over tid.</b> ${S.lyd ? "Appen bipper, indtil mærket er scannet." : "Slå lyd til, så bipper appen, mens den er åben."}</p><button class="knap" data-handling="lyd">${S.lyd ? "Slå lyd fra" : "Slå lyd til"}</button></div>`;
+    ? '<p class="demo-linje">Demo. Gemmes kun på denne telefon. <button class="link" data-handling="afslut-demo">Afslut</button></p>'
+    : '<p class="demo-linje">Demo. Gemmes kun på denne telefon.</p>';
   if (!alle.length) {
     html += `<div class="kort"><h2>Scan jeres første mærke</h2><p class="daempet">Hold telefonen hen til et Plejer-mærke. Så spørger appen, hvad det skal huske.</p></div>`;
   }
-  if (alle.length > 1) html += vaelgere(alle.length, vist.length);
+  if (S.filter !== "alle" || S.sorter !== "frist") {
+    const { v, p, st } = filterValg(), navn = [...v, ...p, ...st].find(([k]) => k === S.filter)?.[1];
+    html += `<p class="viser">${S.filter !== "alle" ? esc(navn) + " · " : ""}${S.sorter !== "frist" ? "sorteret efter " + esc(SORTERINGER.find(([k]) => k === S.sorter)[1].toLowerCase()) + " · " : ""}<button class="link" data-handling="nulstil">Nulstil</button></p>`;
+  }
   if (alle.length && !vist.length) html += '<div class="kort"><p class="daempet">Ingen opgaver passer til det valgte.</p></div>';
   if (S.sorter !== "frist") {
     if (S.sorter === "navn") html += sektion("Alle opgaver", [...vist].sort((a, b) => alfa(a.o.name, b.o.name)));
     else if (S.sorter === "maerke") html += sektion("Efter mærke", [...vist].sort((a, b) => a.o.id.localeCompare(b.o.id)));
     else if (S.sorter === "sted") html += grupper(vist, (x) => (x.o.place || "").trim(), "Uden sted");
     else if (S.sorter === "ansvar") html += grupper(vist, (x) => ansvarNavn(x.o).replace(/^dig$/, "Dig"), "Ingen ansvarlig");
-    return html + bundKnapper();
+    return html + bundKnapper(alle.length);
   }
   const vOver = over.filter(passer), vUge = uge.filter(passer), vSenere = senere.filter(passer);
   html += sektion("Over tid", vOver);
-  if (vUge.length) {
-    html += `<section class="liste"><div class="sek-hoved"><h2>Denne uge</h2><span>${vUge.length}</span></div>`;
-    let sidst = null;
-    for (const x of vUge) {
-      if (x.s.d !== sidst) {
-        sidst = x.s.d;
-        const lbl = x.s.d === 0 ? "I dag" : x.s.d === 1 ? "I morgen" : `${UGEDAGE[new Date(x.s.frist).getDay()]} ${dato(x.s.frist)}`;
-        html += `<div class="dag">${esc(lbl)}</div>`;
-      }
-      html += raekke(x.o);
-    }
-    html += "</section>";
-  }
-  html += sektion("Senere", vSenere);
-  return html + bundKnapper();
+  html += sektion("Denne uge", vUge);
+  if (vSenere.length) html += S.visSenere ? sektion("Senere", vSenere)
+    : `<button class="flere" data-handling="senere">${vSenere.length} ${vSenere.length === 1 ? "opgave" : "opgaver"} senere</button>`;
+  return html + bundKnapper(alle.length);
 }
-function bundKnapper() {
+function bundKnapper(antal = 0) {
   let html = '<div class="bund-knapper">';
   if ("NDEFReader" in window) html += '<button class="knap bred" data-handling="nfc">Scan mærke</button>';
   else html += '<p class="daempet" style="text-align:center;font-size:15px">Hold telefonen hen til et mærke for at scanne.</p>';
   if (S.lager.demo) html += '<button class="knap sek bred" data-handling="proev">Prøv et mærke</button>';
+  if (antal > 1) html += '<button class="link" data-handling="sorter-ark">Sortér og filtrér</button>';
   html += "</div>";
   return html;
 }
@@ -529,7 +522,7 @@ function visOpgaveArk(id) {
   const o = S.lager.opgaver().find((x) => x.id === id); if (!o) return;
   const s = status(o);
   const andre = opgaverPaa(tagAf(o)).filter((x) => x.id !== o.id);
-  aabnArk(`<div style="display:flex;gap:14px;align-items:center">${symbolSvg(tagAf(o), "sym", o.icon)}<div><h2>${esc(o.name)}</h2><p class="daempet">${o.place ? esc(o.place) + " · " : ""}${esc(intervalTekst(o.num, o.unit))} · ${esc(maerkeInfo(tagAf(o))?.navn || "")}</p></div></div>
+  aabnArk(`<div style="display:flex;gap:14px;align-items:center">${symbolSvg(tagAf(o), "sym", o.icon)}<div><h2>${esc(o.name)}</h2><p class="daempet">${o.place ? esc(o.place) + " · " : ""}${esc(intervalTekst(o.num, o.unit))}${ansvarNavn(o) ? " · ansvar: " + esc(ansvarNavn(o)) : ""}</p></div></div>
     <p>Næste gang: <b>${dato(s.frist)}</b> (${esc(s.tekst.toLowerCase())})</p>
     ${ansvarNavn(o) ? `<p>Hovedansvarlig: <b>${esc(ansvarNavn(o) === "dig" ? "Dig" : ansvarNavn(o))}</b></p>` : ""}
     ${(o.history || []).length ? `<div class="historik">${o.history.slice(0, 5).map((h) => `<div><span>${dato(h.at)}</span><span class="daempet">${esc(personNavn(h.by))}</span></div>`).join("")}</div>` : ""}
@@ -633,6 +626,8 @@ document.addEventListener("click", async (ev) => {
   if (h === "afslut-demo") return afslutDemo();
   if (h === "hjem") { lukArk(); S.visning = "hjem"; S.data = null; return render(); }
   if (h === "vis") return visOpgaveArk(id);
+  if (h === "senere") { S.visSenere = true; return render(); }
+  if (h === "sorter-ark") { const n = S.lager.opgaver().length; return aabnArk(`<h2>Sortér og filtrér</h2>${vaelgere(n, n)}<button class="knap bred" data-handling="luk">Færdig</button>`); }
   if (h === "indstillinger") return visIndstillinger();
   if (h === "nfc") return scanNfc();
   if (h === "proev") {
