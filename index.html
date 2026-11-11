@@ -188,7 +188,7 @@
       </div></div>
       <div class="indre"><h3>Pakke 1</h3>
         <ul><li><span class="antal">8 ×</span>hvide mærker, A1 til A8</li><li><span class="antal"></span>Cirkel, firkant, trekant, stjerne, hjerte, dråbe, måne og lyn</li></ul>
-        <div class="pris-raekke"><span class="pris">199<small>kr.</small></span><a class="knap lille" href="#kontakt">Bestil</a></div></div>
+        <div class="pris-raekke"><span class="pris">199<small>kr.</small></span><a class="knap lille" href="#kontakt" data-kurv="pakke-1">Bestil</a></div></div>
     </article>
     <article class="pakke">
       <div class="billede"><div class="gitter">
@@ -203,7 +203,7 @@
       </div></div>
       <div class="indre"><h3>Pakke 2</h3>
         <ul><li><span class="antal">8 ×</span>sorte mærker, B1 til B8</li><li><span class="antal"></span>Sekskant, rude, krone, kløver, sky, blomst, plus og pil</li></ul>
-        <div class="pris-raekke"><span class="pris">199<small>kr.</small></span><a class="knap lille" href="#kontakt">Bestil</a></div></div>
+        <div class="pris-raekke"><span class="pris">199<small>kr.</small></span><a class="knap lille" href="#kontakt" data-kurv="pakke-2">Bestil</a></div></div>
     </article>
     <article class="pakke fremhaevet"><span class="maerkat">Bedst til familien</span>
       <div class="billede"><div class="gitter">
@@ -218,7 +218,7 @@
       </div></div>
       <div class="indre"><h3>Samlet pakke</h3>
         <ul><li><span class="antal">16 ×</span>mærker, pakke 1 og pakke 2</li><li><span class="antal"></span>16 forskellige former, ingen at forveksle</li></ul>
-        <div class="pris-raekke"><span class="pris">349<small>kr.</small></span><a class="knap lille" href="#kontakt">Bestil</a></div></div>
+        <div class="pris-raekke"><span class="pris">349<small>kr.</small></span><a class="knap lille" href="#kontakt" data-kurv="samlet-pakke">Bestil</a></div></div>
     </article>
   </div>
   <article class="eget">
@@ -234,7 +234,7 @@
       <div class="pris-raekke"><span class="pris"><small class="fra">Fra</small>1.549<small>kr.</small></span><a class="knap lille" href="#kontakt">Kontakt os</a></div>
     </div>
   </article>
-  <div class="pakke-note"><span>Alle priser er inkl. moms</span><span>Enkelte mærker til efterbestilling: 39 kr.</span><span>Webshoppen åbner, når første parti mærker er klar</span></div>
+  <div class="pakke-note"><span>Alle priser er inkl. moms</span><span>Enkelte mærker til efterbestilling: 39 kr. <button class="tekstknap" type="button" data-kurv="enkelt-maerke" data-kurv-vis hidden>Læg i kurv</button></span><span data-kurv-skjul>Webshoppen åbner, når første parti mærker er klar</span><span data-kurv-vis hidden>Fragt 49 kr. 14 dages fortrydelsesret</span></div>
 </div></section>
 
 <section id="appen"><div class="ramme app">
@@ -324,7 +324,7 @@
 
 <footer class="bund"><div class="ramme">
   <span>Plejer · AI Workshop DK</span>
-  <nav><a href="privatliv.html">Privatliv</a><a href="https://stemplerind.dk">Søster til StemplerInd</a><a href="mailto:kasper@ai-workshop.dk">kasper@ai-workshop.dk</a></nav>
+  <nav><a href="betingelser.html">Handelsbetingelser</a><a href="fortryd.html">Fortryd et køb</a><a href="privatliv.html">Privatliv</a><a href="https://stemplerind.dk">Søster til StemplerInd</a><a href="mailto:kasper@ai-workshop.dk">kasper@ai-workshop.dk</a></nav>
 </div></footer>
 <script>
 // Mærkerne i pakkerne vibrerer kort, når de kommer ind på skærmen, som en telefon, der lige har læst et mærke. Som på stemplerind.dk. Ikke når brugeren har slået bevægelse fra.
@@ -341,4 +341,6 @@
   kort.forEach(function (k) { o.observe(k); });
 })();
 </script>
+<script src="kurv-data.js" defer></script>
+<script src="kurv.js" defer></script>
 </body></html>

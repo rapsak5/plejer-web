@@ -1,0 +1,78 @@
+# Udgiver kassen til Plejers webshop som Cloudflare Worker (plejer-butik). Kopieret fra StemplerInd.
+# Kører, når kassen, kataloget eller testene ændres på main. Kan også startes med "Run workflow", også fra en anden gren.
+# Kræver hemmeligheder i repoet: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID og STRIPE_SECRET_KEY.
+# Valgfrit, så betalte ordrer lander i Shipmondo: STRIPE_WEBHOOK_SECRET, SHIPMONDO_API_USER og SHIPMONDO_API_KEY.
+# Mangler de, springes udgivelsen over uden fejl. Se butik/LAES_MIG.md.
+name: Kasse til webshoppen
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'butik/**'
+      - 'tests/**'
+      - 'kurv-data.js'
+      - 'index.html'
+      - 'package.json'
+      - '.github/workflows/butik.yml'
+  workflow_dispatch:
+
+jobs:
+  kasse:
+    runs-on: ubuntu-latest
+    env:
+      HAR_CLOUDFLARE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+      HAR_STRIPE: ${{ secrets.STRIPE_SECRET_KEY != '' }}
+      KASSE: https://plejer-butik.stemplerind.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installér
+        run: npm ci
+
+      - name: Test kassen og at hjemmesiden passer til kataloget
+        run: npx vitest run
+
+      - name: Udgiv kassen hos Cloudflare
+        if: env.HAR_CLOUDFLARE == 'true'
+        working-directory: butik
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4 deploy
+
+      - name: Læg nøglerne i Cloudflare
+        if: env.HAR_CLOUDFLARE == 'true'
+        working-directory: butik
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          SHIPMONDO_API_USER: ${{ secrets.SHIPMONDO_API_USER }}
+          SHIPMONDO_API_KEY: ${{ secrets.SHIPMONDO_API_KEY }}
+        run: |
+          # Kun dem, der findes i GitHub. Linjeskift fra indsatte værdier fjernes.
+          for n in STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET SHIPMONDO_API_USER SHIPMONDO_API_KEY; do
+            v="${!n}"
+            if [ -n "$v" ]; then printf '%s' "$v" | tr -d '\r\n' | npx --yes wrangler@4 secret put "$n" >/dev/null && echo "$n lagt i Cloudflare"; else echo "::notice::$n mangler."; fi
+          done
+
+      - name: Prøv kassen
+        if: env.HAR_CLOUDFLARE == 'true' && env.HAR_STRIPE == 'true'
+        run: |
+          # Kassens status og en rigtig betalingsside hos Stripe for én Pakke 1, som kurven på plejer.dk laver den
+          sleep 5
+          curl -sS "$KASSE/"; echo
+          SVAR=$(curl -sS -X POST "$KASSE/kasse" -H 'origin: https://plejer.dk' -H 'content-type: application/json' -d '{"varer":[{"id":"pakke-1","antal":1}],"sprog":"da","sti":"/"}')
+          echo "$SVAR" | grep -q '"url":"https://checkout.stripe.com/' || { echo "::error::Kassen kunne ikke lave en betaling hos Stripe: $SVAR"; exit 1; }
+          echo "Kassen laver betalingssider hos Stripe."
+
+      - name: Mangler hemmeligheder
+        if: env.HAR_CLOUDFLARE != 'true'
+        run: echo "::notice::Kassen er ikke udgivet. Læg CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID og STRIPE_SECRET_KEY ind under Settings › Secrets and variables › Actions. Se butik/LAES_MIG.md."

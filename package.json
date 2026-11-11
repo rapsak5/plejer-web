@@ -1,0 +1,14 @@
+{
+  "name": "plejer-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "plejer.dk: hjemmeside, webapp og kassen til webshoppen.",
+  "scripts": {
+    "test": "vitest run",
+    "konfigurer": "node butik/konfigurer.mjs"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}

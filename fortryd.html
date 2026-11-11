@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fortryd et køb hos Plejer</title>
+<meta name="theme-color" content="#C9A227">
+<link rel="icon" href="ikon.svg"><link rel="stylesheet" href="stil.css"><link rel="canonical" href="https://plejer.dk/fortryd.html">
+<meta name="description" content="Fortryd et køb af NFC-mærker hos Plejer inden for 14 dage.">
+</head>
+<body><main class="enkel">
+<div class="enkel-top"><a class="logo-navn" href="./"><img src="ikon.svg" alt="">Plejer</a></div>
+<h1>Fortryd et køb</h1>
+<p>Her fortryder du et køb inden for 14 dage efter, at du har modtaget mærkerne. Du får en kvittering på mail med det, du har sendt, og tidspunktet.</p>
+<form class="formular" id="fortryd" action="https://formsubmit.co/kasper@ai-workshop.dk" method="POST">
+  <input type="hidden" name="_subject" value="Fortrydelse af køb hos Plejer">
+  <input type="hidden" name="_next" value="https://plejer.dk/fortryd.html?sendt=1">
+  <input type="hidden" name="_template" value="table">
+  <input type="hidden" name="_autoresponse" id="r-svar" value="Vi har modtaget din fortrydelse af købet hos Plejer. Indholdet og tidspunktet står nedenfor. Send varen til Berg-Streaming, CVR 40989102, Ove Billes Vej 7, 1., 2300 København S. Vi betaler tilbage senest 14 dage efter, at vi fik din fortrydelse.">
+  <input type="hidden" name="Tidspunkt" id="r-tid" value="">
+  <input type="hidden" name="sprog" value="da">
+  <input type="text" name="_honey" class="honning" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <div id="r-trin1">
+    <div class="to-felter">
+      <label for="r-navn">Navn<input id="r-navn" name="navn" required autocomplete="name"></label>
+      <label for="r-mail">E-mail<input id="r-mail" name="email" type="email" required autocomplete="email"></label>
+    </div>
+    <label for="r-ordre">Kvitteringsnummer eller ordredato<input id="r-ordre" name="ordre" required></label>
+    <label for="r-varer">Hvilke varer? Tomt betyder hele ordren<textarea id="r-varer" name="varer" rows="3"></textarea></label>
+    <div class="send-raekke"><button class="knap" type="submit" id="r-videre">Fortryd købet</button></div>
+  </div>
+  <div id="r-trin2" hidden>
+    <p><b>Tjek oplysningerne, og bekræft, at du vil fortryde købet.</b></p>
+    <dl class="fortryd-resume" id="r-resume"></dl>
+    <div class="send-raekke"><button class="knap" type="submit" id="r-bekraeft">Bekræft fortrydelse</button><button class="tekstknap" type="button" id="r-ret">Ret oplysningerne</button></div>
+  </div>
+</form>
+<p class="tak" id="r-tak" role="status" hidden>Vi har modtaget din fortrydelse. Kvitteringen kommer på mail. Send varen til Berg-Streaming, CVR 40989102, Ove Billes Vej 7, 1., 2300 København S.</p>
+<p class="daempet"><a href="betingelser.html">Handelsbetingelser</a> · <a href="privatliv.html">Privatlivspolitik</a></p>
+</main>
+<script>
+(function () {
+  var form = document.getElementById('fortryd'), t1 = document.getElementById('r-trin1'), t2 = document.getElementById('r-trin2');
+  if (/[?&]sendt=1/.test(location.search)) { form.hidden = true; document.getElementById('r-tak').hidden = false; return; }
+  var bekraeftet = false;
+  function felt(id) { return document.getElementById(id); }
+  form.addEventListener('submit', function (e) {
+    if (bekraeftet) return;
+    e.preventDefault();
+    if (!form.reportValidity()) return;
+    // Trin 2: vis det, der sendes, og bed om en bekræftelse
+    var dl = felt('r-resume'); dl.textContent = '';
+    ['r-navn', 'r-mail', 'r-ordre', 'r-varer'].forEach(function (id) {
+      var v = felt(id).value.trim(); if (!v) return;
+      var dt = document.createElement('dt'); dt.textContent = felt(id).parentNode.firstChild.textContent; var dd = document.createElement('dd'); dd.textContent = v; dl.appendChild(dt); dl.appendChild(dd);
+    });
+    t1.hidden = true; t2.hidden = false; felt('r-bekraeft').focus();
+  });
+  felt('r-bekraeft').addEventListener('click', function () {
+    var nu = new Date();
+    felt('r-tid').value = nu.toLocaleString(document.documentElement.lang, { dateStyle: 'long', timeStyle: 'medium' }) + ' (' + nu.toISOString() + ')';
+    bekraeftet = true;
+  });
+  felt('r-ret').addEventListener('click', function () { t2.hidden = true; t1.hidden = false; felt('r-navn').focus(); });
+})();
+</script>
+</body></html>

@@ -1,0 +1,12 @@
+# Cloudflare Worker til kurven på plejer.dk
+# Adressen bliver https://plejer-butik.stemplerind.workers.dev (underdomænet stemplerind gælder hele Cloudflare-kontoen)
+name = "plejer-butik"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+# Ekstra adresser, der må kalde kassen, fx til test fra din egen computer. Kommasepareret.
+# [vars]
+# EKSTRA_OPRINDELSE = "http://localhost:4173"
+
+# Hemmelighederne lægges ind i Cloudflare af workflowet, ikke her. Se LAES_MIG.md.

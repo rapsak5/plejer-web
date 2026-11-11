@@ -413,3 +413,46 @@ main.enkel code { font-family: var(--mono); font-size: 14px; }
 .trin-ikon { width: 76px; height: 76px; top: 12px; right: 14px; }
 .saadan-indhold .trin li { padding-right: 104px; }
 @media (max-width: 420px) { .trin-ikon { width: 56px; height: 56px; } .saadan-indhold .trin li { padding-right: 80px; } }
+
+/* Webshop: kurv, fortrydelse og handelsbetingelser. Kopieret fra StemplerInd. */
+.pakke-note [hidden], .kurv-panel [hidden], .formular [hidden], main.enkel [hidden] { display: none !important; }
+.tekstknap { background: none; border: 0; padding: 0 2px; font: inherit; font-weight: 600; color: var(--blaek); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.pakke-note .tekstknap { margin-left: 8px; }
+button.knap { font-family: var(--sans); }
+.knap.lagt { background: var(--fremhaev); }
+.kurv-knap { position: fixed; right: 16px; bottom: 16px; z-index: 40; display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 18px; border-radius: 999px; border: 0; background: var(--groen); color: var(--groen-tekst); font: inherit; font-weight: 700; box-shadow: var(--skygge); cursor: pointer; }
+.kurv-knap[hidden] { display: none; }
+.kurv-tal { min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: var(--groen-tekst); color: var(--groen); font-family: var(--mono); font-size: 14px; display: inline-grid; place-items: center; }
+.kurv-knap.puls { animation: kurv-puls .4s ease; }
+@keyframes kurv-puls { 50% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .kurv-knap.puls { animation: none; } }
+.kurv-panel { width: min(440px, calc(100% - 32px)); max-height: calc(100% - 32px); border: 1px solid var(--kant); border-radius: 18px; padding: 20px; background: var(--flade); color: var(--blaek); box-shadow: var(--skygge); }
+.kurv-panel::backdrop { background: rgba(30, 29, 26, .45); }
+.kurv-hoved { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.kurv-hoved h2 { margin: 0; font-size: 22px; }
+.kurv-luk { width: 40px; height: 40px; border-radius: 20px; border: 1px solid var(--kant); background: var(--flade); color: var(--blaek); font-size: 22px; line-height: 1; cursor: pointer; }
+.kurv-linjer { list-style: none; margin: 0; padding: 0; }
+.kurv-linjer li { display: grid; grid-template-columns: 1fr auto auto; grid-template-areas: "navn styr pris" "fjern fjern fjern"; align-items: center; gap: 4px 12px; padding: 12px 0; border-bottom: 1px solid var(--linje); }
+.kurv-navn { grid-area: navn; font-weight: 600; }
+.kurv-styr { grid-area: styr; display: inline-flex; align-items: center; gap: 6px; }
+.kurv-pm { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--kant); background: var(--papir); color: var(--blaek); font: inherit; font-size: 18px; cursor: pointer; }
+.kurv-antal { min-width: 22px; text-align: center; font-family: var(--mono); }
+.kurv-pris { grid-area: pris; font-family: var(--mono); text-align: right; min-width: 76px; }
+.kurv-fjern { grid-area: fjern; justify-self: start; font-size: 14px; color: var(--daempet); }
+.kurv-sum { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 14px 0 16px; }
+.kurv-sum[hidden] { display: none; }
+.kurv-sum dd { margin: 0; font-family: var(--mono); text-align: right; }
+.kurv-sum .ialt { font-weight: 700; font-size: 18px; }
+.kurv-betal { width: 100%; }
+.kurv-betal[hidden] { display: none; }
+.kurv-fejl { color: #B3261E; margin: 0 0 12px; }
+.kurv-stripe { font-size: 14px; text-align: center; margin: 10px 0 0; }
+.kurv-tak { margin: 0 0 24px; padding: 14px 18px; border-radius: 14px; background: var(--groen-lys); font-weight: 600; }
+@media (max-width: 560px) {
+  .kurv-panel { width: 100%; max-width: none; margin: auto 0 0; border-radius: 18px 18px 0 0; max-height: 85vh; }
+}
+.fortryd-resume { margin: 0; }
+.fortryd-resume dt { font-size: 14px; font-weight: 600; }
+.fortryd-resume dd { margin: 2px 0 12px; overflow-wrap: anywhere; white-space: pre-line; }
+.formular-skabelon { background: var(--flade); border: 1px solid var(--kant); border-radius: 16px; padding: 18px 20px; line-height: 2; }
+.kurv-vilkaar { font-size: 14px; text-align: center; margin: 6px 0 0; }
