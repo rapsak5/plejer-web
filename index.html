@@ -317,8 +317,22 @@
   </article>
 </div></section>
 
-<section id="kontakt"><div class="ramme">
-  <div class="sektion-hoved"><span class="etiket">Kontakt</span><h2>Vil du bestille eller have mærker med eget design?</h2><p>Skriv til <a href="mailto:kasper@ai-workshop.dk">kasper@ai-workshop.dk</a>.</p></div>
+<section id="kontakt"><div class="ramme kontakt">
+  <div class="sektion-hoved"><span class="etiket">Kontakt</span><h2>Vil du bestille eller have mærker med eget design?</h2><p>Skriv her, så vender vi tilbage hurtigst muligt.</p><p class="daempet">Du kan også skrive direkte til <a href="mailto:kasper@ai-workshop.dk">kasper@ai-workshop.dk</a>.</p></div>
+  <form class="formular" id="formular" action="https://formsubmit.co/kasper@ai-workshop.dk" method="POST">
+    <input type="hidden" name="_subject" value="Ny besked fra plejer.dk">
+    <input type="hidden" name="_next" value="https://plejer.dk/?tak=1#kontakt">
+    <input type="hidden" name="_template" value="table">
+    <input type="text" name="_honey" class="honning" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <div class="to-felter">
+      <label for="f-navn">Navn<input id="f-navn" name="navn" required autocomplete="name"></label>
+      <label for="f-mail">E-mail<input id="f-mail" name="email" type="email" required autocomplete="email"></label>
+    </div>
+    <label for="f-emne">Emne<select id="f-emne" name="emne"><option>Spørgsmål</option><option>Bestilling</option><option>Eget design</option><option>Andet</option></select></label>
+    <label for="f-besked">Besked<textarea id="f-besked" name="besked" rows="5" required></textarea></label>
+    <div class="send-raekke"><button class="knap" type="submit">Send besked</button><span class="daempet lille">Beskeden sendes til vores mail gennem tjenesten FormSubmit. <a href="privatliv.html">Privatliv</a></span></div>
+    <p class="tak" id="tak" role="status" hidden>Tak for din besked. Vi vender tilbage hurtigst muligt.</p>
+  </form>
 </div></section>
 </main>
 
@@ -326,6 +340,9 @@
   <span>Plejer · AI Workshop DK</span>
   <nav><a href="betingelser.html">Handelsbetingelser</a><a href="fortryd.html">Fortryd et køb</a><a href="privatliv.html">Privatliv</a><a href="https://stemplerind.dk">Søster til StemplerInd</a><a href="mailto:kasper@ai-workshop.dk">kasper@ai-workshop.dk</a></nav>
 </div></footer>
+<script>
+if (/[?&]tak=1/.test(location.search)) { document.getElementById('tak').hidden = false; }
+</script>
 <script>
 // Mærkerne i pakkerne vibrerer kort, når de kommer ind på skærmen, som en telefon, der lige har læst et mærke. Som på stemplerind.dk. Ikke når brugeren har slået bevægelse fra.
 (function () {
