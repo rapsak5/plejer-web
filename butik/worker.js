@@ -70,6 +70,10 @@ export function sessionFelter({ varer, sprog, sti }, K = KATALOG) {
   // Linket til handelsbetingelserne står over betalingsknappen hos Stripe
   if (K.vilkaar && K.vilkaar[l]) f.set('custom_text[submit][message]', K.vilkaar[l]);
   f.set('metadata[kurv]', linjer.map(v => v.antal + 'x' + v.id).join(',').slice(0, 500));
+  // Stripe-kontoen deles med StemplerInd. Butikken står på betalingen, så hver kasse kun sender sine egne ordrer til Shipmondo.
+  f.set('metadata[butik]', K.domaene);
+  f.set('payment_intent_data[metadata][butik]', K.domaene);
+  if (K.kontoudtog) f.set('payment_intent_data[statement_descriptor_suffix]', K.kontoudtog);
   if (sti) f.set('metadata[side]', String(sti).slice(0, 100));
   return f;
 }

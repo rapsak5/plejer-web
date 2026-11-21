@@ -16,6 +16,8 @@ export const KATALOG = {
   lande: ['DK'],
   skuPraefiks: 'PL-',
   skabelon: 'Plejer',
+  // Står efter kontoens navn på kundens kontoudtog. Højst 22 tegn i alt sammen med kontoens forkortede navn.
+  kontoudtog: 'PLEJER',
   fragt: {
     oere: 4900,
     navn: { da: 'Pakke til pakkeshop med GLS' }

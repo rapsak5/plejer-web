@@ -84,4 +84,11 @@ describe('hjemmesiden passer til kataloget', () => {
   it('handelsbetingelserne nævner samme fragt', () => {
     expect(fil('betingelser.html')).toContain('Fragt koster ' + KATALOG.fragt.oere / 100 + ' kr.');
   });
+
+  it('mærker betalingen med butikken og PLEJER på kontoudtoget', () => {
+    const f = sessionFelter({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da' });
+    expect(f.get('metadata[butik]')).toBe('plejer.dk');
+    expect(f.get('payment_intent_data[metadata][butik]')).toBe('plejer.dk');
+    expect(f.get('payment_intent_data[statement_descriptor_suffix]')).toBe('PLEJER');
+  });
 });

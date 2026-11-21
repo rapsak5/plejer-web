@@ -14,7 +14,7 @@ async function underskriv(krop, t, hemmelig = HEMMELIG) {
 const session = {
   id: 'cs_test_abc', object: 'checkout.session', created: 1794300000, currency: 'dkk', payment_status: 'paid', payment_intent: 'pi_123',
   amount_total: 32600, shipping_cost: { amount_total: 4900 },
-  metadata: { kurv: '1xpakke-1,2xenkelt-maerke' },
+  metadata: { kurv: '1xpakke-1,2xenkelt-maerke', butik: 'plejer.dk' },
   custom_fields: [{ key: 'maerker', type: 'text', text: { value: ' A3 og B5 ' } }],
   customer_details: { email: 'kunde@example.com', name: 'Kunde Kundesen', phone: null, address: { country: 'DK', postal_code: '2300' } },
   collected_information: { shipping_details: { name: 'Kunde Kundesen', address: { line1: 'Testvej 1', line2: null, postal_code: '2300', city: 'København S', country: 'DK' } } }
@@ -69,5 +69,17 @@ describe('Stripe til Shipmondo', () => {
     const post = kald.find(([u, m]) => u.endsWith('/sales_orders') && m === 'POST');
     expect(post).toBeTruthy();
     expect(JSON.parse(post[2]).shipment_template_id).toBe(9);
+  });
+  it('springer betalinger fra StemplerInd over, fordi Stripe-kontoen deles', async () => {
+    const env = { STRIPE_WEBHOOK_SECRET: HEMMELIG, SHIPMONDO_API_USER: 'u', SHIPMONDO_API_KEY: 'k' };
+    const anden = { ...session, id: 'cs_test_si', metadata: { kurv: '1xstartpakken', ordre: 'SI-1001' } };
+    const krop = JSON.stringify({ type: 'checkout.session.completed', data: { object: anden } });
+    const t = Math.floor(Date.now() / 1000);
+    const f = vi.fn(async () => new Response('{}', { status: 201 }));
+    vi.stubGlobal('fetch', f);
+    const r = await stripeHaendelse(new Request('https://x/stripe', { method: 'POST', body: krop, headers: { 'stripe-signature': await underskriv(krop, t) } }), env, KATALOG);
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ ok: true, 'anden-butik': true });
+    expect(f).not.toHaveBeenCalled();
   });
 });

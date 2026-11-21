@@ -95,6 +95,8 @@ export async function stripeHaendelse(req, env, K) {
   const h = JSON.parse(krop);
   const s = h.data && h.data.object;
   if (h.type !== 'checkout.session.completed' || !s || s.payment_status !== 'paid') return new Response('{"ok":true,"springet":true}', { status: 200 });
+  // Kontoen deles med StemplerInd. Betalinger fra en anden butik springes over.
+  if ((s.metadata && s.metadata.butik) !== K.domaene) return new Response('{"ok":true,"anden-butik":true}', { status: 200 });
   if (!env.SHIPMONDO_API_USER || !env.SHIPMONDO_API_KEY) { console.log('Shipmondo mangler nøgle, ordre', s.id); return new Response('{"ok":true,"shipmondo":false}', { status: 200 }); }
 
   let ordre;

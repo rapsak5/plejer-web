@@ -35,14 +35,10 @@ Kasper taster selv alle nøgler. De lægges som hemmeligheder i GitHub og aldrig
 
 **1. Cloudflare.** Samme konto som StemplerInd. Account ID `6214d929377ce8f7d8c6b479a58de4b8`. StemplerInds API-token virker også her. Nyt token: My Profile › API Tokens › Create Token › Edit Cloudflare Workers. Slet Zone policy, og vælg kontoen under Account policy.
 
-**2. Stripe.** En ny konto til Plejer under samme login (kontovælgeren › New account), så kunderne ser Plejer og ikke StemplerInd.
-- Public details: Trading name Plejer, Privacy policy `https://plejer.dk/privatliv.html`, Terms of service `https://plejer.dk/betingelser.html`.
-- Statement descriptor `PLEJER.DK`, kort udgave `PLEJER`.
-- Branding: ikon, logo og brandfarven `#C9A227`.
-- Customer emails: Successful payments til.
-- Payment methods: Klarna fra. MobilePay fra.
-- Sandbox › Developers › API keys › Create restricted key: kun Write på Checkout Sessions. Nøglen starter med `rk_test_`.
-- Developers › Webhooks › Add destination: hændelse `checkout.session.completed`, adresse `https://plejer-butik.stemplerind.workers.dev/stripe`. Kopiér `whsec_...`.
+**2. Stripe.** Samme Stripe-konto som StemplerInd. Ingen ny konto. Hver betaling har `butik: plejer.dk` i metadata, og kassen sender kun sine egne betalinger videre til Shipmondo. På kontoudtoget står kontoens navn efterfulgt af `PLEJER` (`kontoudtog` i `katalog.js`).
+- Den begrænsede nøgle fra StemplerInd (kun Write på Checkout Sessions) kan genbruges som `STRIPE_SECRET_KEY`.
+- Ny webhook til Plejer: Developers › Webhooks › Add destination, hændelse `checkout.session.completed`, adresse `https://plejer-butik.stemplerind.workers.dev/stripe`. Kopiér `whsec_...`. StemplerInds webhook får også Plejers betalinger, men springer dem over, fordi varerne er ukendte i StemplerInds katalog.
+- Betalingssiden viser kontoens navn og logo, ikke Plejers.
 
 **3. Shipmondo.** Samme konto som StemplerInd. Opret forsendelsesskabelonen **Plejer GLS pakkeshop**: GLS Denmark, ShopDelivery, fragtaftale Shipmondo, 0 til 1 kg, e-mailadvisering. Kassen finder den, fordi navnet indeholder Plejer. API-brugeren fra StemplerInd kan genbruges.
 
@@ -50,18 +46,18 @@ Kasper taster selv alle nøgler. De lægges som hemmeligheder i GitHub og aldrig
 
 | Name | Værdi |
 | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Tokenet fra trin 1 |
+| `CLOUDFLARE_API_TOKEN` | Samme som StemplerInd |
 | `CLOUDFLARE_ACCOUNT_ID` | `6214d929377ce8f7d8c6b479a58de4b8` |
-| `STRIPE_SECRET_KEY` | `rk_test_...` fra Plejers Stripe-konto |
-| `STRIPE_WEBHOOK_SECRET` | `whsec_...` fra webhooken |
-| `SHIPMONDO_API_USER` | Fra Shipmondo |
-| `SHIPMONDO_API_KEY` | Fra Shipmondo |
+| `STRIPE_SECRET_KEY` | Samme `rk_test_...` som StemplerInd |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_...` fra Plejers nye webhook |
+| `SHIPMONDO_API_USER` | Samme som StemplerInd |
+| `SHIPMONDO_API_KEY` | Samme som StemplerInd |
 
 Kør Actions › Kasse til webshoppen › Run workflow. Når den er grøn, svarer `https://plejer-butik.stemplerind.workers.dev` med `{"ok":true,"butik":"plejer.dk","test":true,"shipmondo":true}`.
 
 **5. Test.** Åbn `https://plejer.dk/?butik=test`, læg varer i kurven, og betal med testkortet 4242 4242 4242 4242. Tjek tak-beskeden, den tomme kurv, kvitteringen på mail, betalingen i Stripe Sandbox og ordren i Shipmondo. Læg også et enkelt mærke i kurven, og se, at Stripe spørger efter hvilke, og at svaret står på ordren i Shipmondo.
 
-**6. Live.** Lav en begrænset nøgle (`rk_live_`) og en webhook uden Sandbox. Ret `STRIPE_SECRET_KEY` og `STRIPE_WEBHOOK_SECRET` i GitHub, og kør workflowet.
+**6. Live.** Brug StemplerInds live-nøgle (`rk_live_`) og lav Plejers webhook uden Sandbox. Ret `STRIPE_SECRET_KEY` og `STRIPE_WEBHOOK_SECRET` i GitHub, og kør workflowet.
 
 ## Bemærk
 
