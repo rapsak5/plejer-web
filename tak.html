@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tak for din ordre | Plejer</title>
+<meta name="theme-color" content="#C9A227">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="ikon.svg"><link rel="stylesheet" href="stil.css?v=18a0e4dacd">
+</head>
+<body><main class="enkel">
+<div class="enkel-top"><a class="logo-navn" href="./"><img src="ikon.svg" alt="">Plejer</a></div>
+<h1>Tak for din ordre</h1>
+<p class="daempet" id="o-henter" role="status">Henter din ordre</p>
+<div id="o-ordre" hidden>
+  <p class="ordre-test" id="o-test" hidden>Testordre. Der er ikke trukket penge.</p>
+  <p id="o-betalt">Vi har modtaget din betaling. Kvitteringen kommer på mail til <b id="o-mail"></b>.</p>
+  <dl class="ordre-fakta"><dt>Ordrenummer</dt><dd class="mono" id="o-nr"></dd><dt>Dato</dt><dd id="o-dato"></dd></dl>
+  <table class="ordre-linjer"><tbody id="o-linjer"></tbody>
+    <tfoot><tr><th scope="row">Fragt</th><td id="o-fragt"></td></tr><tr class="ialt"><th scope="row">I alt</th><td id="o-total"></td></tr><tr class="moms"><th scope="row">Heraf moms</th><td id="o-moms"></td></tr></tfoot></table>
+  <div id="o-shop" hidden><h2>Afhentes i</h2><p id="o-shopadr"></p></div>
+  <div id="o-lev" hidden><h2>Leveres til</h2><p id="o-adresse"></p></div>
+  <h2>Hvad sker der nu?</h2>
+  <p>Vi pakker dine mærker og sender dem normalt inden for 3 hverdage til din pakkeshop. Du får besked på sms og mail, når pakken kan hentes.</p>
+  <p>Imens kan du åbne appen og oprette din husstand.</p>
+  <p><a class="knap" href="app/">Åbn appen</a></p>
+</div>
+<p class="kurv-fejl" id="o-fejl" role="alert" hidden></p>
+<p class="daempet">Spørgsmål til ordren? Skriv til kasper@ai-workshop.dk og nævn ordrenummeret.</p>
+<p class="daempet"><a href="./">Til forsiden</a> · <a href="betingelser.html">Handelsbetingelser</a> · <a href="fortryd.html">Fortryd et køb</a> · <a href="privatliv.html">Privatliv</a></p>
+</main>
+<script>
+// Takkesiden efter betaling hos Stripe. Henter ordren fra kassen ud fra sessionens id i adressen (tak.html?id=cs_...).
+// Kassen viser kun det, kunden selv har tastet og købt, aldrig kortdata, og kun ordrer, der er højst 30 dage gamle.
+(function () {
+  var API = 'https://plejer-butik.stemplerind.workers.dev', sprog = 'da';
+  var T = {
+    fejl: 'Vi kunne ikke hente ordren lige nu. Er betalingen gennemført, får du en kvittering på mail. Skriv til kasper@ai-workshop.dk, hvis du er i tvivl.',
+    ikkeBetalt: 'Betalingen er ikke gennemført endnu. Opdatér siden om et øjeblik, eller skriv til kasper@ai-workshop.dk.'
+  };
+  function $(id) { return document.getElementById(id); }
+  function vis(fejl) { $('o-henter').hidden = true; if (fejl) { $('o-fejl').textContent = fejl; $('o-fejl').hidden = false; } }
+  var id = (location.search.match(/[?&]id=(cs_(test|live)_[A-Za-z0-9]{10,200})(&|$)/) || [])[1];
+  if (!id) return vis(T.fejl);
+  fetch(API + '/ordre?id=' + encodeURIComponent(id))
+    .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.fejl || r.status); return d; }); })
+    .then(function (o) {
+      if (!o.betalt) return vis(T.ikkeBetalt);
+      // Betalt: kurven tømmes, så den ikke står fyldt næste gang
+      try { localStorage.removeItem('plejer-kurv'); } catch (e) { }
+      var penge = new Intl.NumberFormat(sprog, { style: 'currency', currency: o.valuta });
+      var kr = function (oere) { return penge.format(oere / 100); };
+      $('o-test').hidden = !o.test;
+      $('o-mail').textContent = o.mail || '';
+      if (!o.mail) $('o-betalt').hidden = true;
+      $('o-nr').textContent = o.ordre || id.slice(-8).toUpperCase();
+      $('o-dato').textContent = o.dato ? new Date(o.dato).toLocaleDateString(sprog, { dateStyle: 'long' }) : '';
+      var tb = $('o-linjer');
+      o.varer.forEach(function (v) {
+        var tr = document.createElement('tr'), th = document.createElement('th'), td = document.createElement('td');
+        th.scope = 'row'; th.textContent = v.antal + ' × ' + v.navn; td.textContent = kr(v.beloeb);
+        tr.appendChild(th); tr.appendChild(td); tb.appendChild(tr);
+      });
+      $('o-fragt').textContent = kr(o.fragt); $('o-total').textContent = kr(o.total); $('o-moms').textContent = kr(o.moms);
+      if (o.pakkeshop) {
+        var p = o.pakkeshop, sa = $('o-shopadr');
+        [p.firma + ': ' + p.navn, p.adresse, (p.postnr + ' ' + p.by).trim()].filter(Boolean).forEach(function (x, i) {
+          if (i) sa.appendChild(document.createElement('br')); sa.appendChild(document.createTextNode(x));
+        });
+        $('o-shop').hidden = false;
+      }
+      if (o.levering && !o.pakkeshop) {
+        var l = o.levering, adr = $('o-adresse');
+        [l.navn].concat(l.linjer, [(l.postnr + ' ' + l.by).trim()]).filter(Boolean).forEach(function (x, i) {
+          if (i) adr.appendChild(document.createElement('br')); adr.appendChild(document.createTextNode(x));
+        });
+        $('o-lev').hidden = false;
+      }
+      $('o-henter').hidden = true; $('o-ordre').hidden = false;
+    })
+    .catch(function () { vis(T.fejl); });
+})();
+</script>
+</body></html>

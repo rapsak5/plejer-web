@@ -12,7 +12,8 @@ on:
       - 'butik/**'
       - 'tests/**'
       - 'kurv-data.js'
-      - 'index.html'
+      - 'kurv.js'
+      - '*.html'
       - 'package.json'
       - '.github/workflows/butik.yml'
   workflow_dispatch:
@@ -37,6 +38,9 @@ jobs:
 
       - name: Test kassen og at hjemmesiden passer til kataloget
         run: npx vitest run
+
+      - name: Lav kataloget til kurven og tjek, at det er committet
+        run: node butik/konfigurer.mjs && git diff --exit-code
 
       - name: Udgiv kassen hos Cloudflare
         if: env.HAR_CLOUDFLARE == 'true'
@@ -66,10 +70,20 @@ jobs:
       - name: Prøv kassen
         if: env.HAR_CLOUDFLARE == 'true' && env.HAR_STRIPE == 'true'
         run: |
-          # Kassens status og en rigtig betalingsside hos Stripe for én Pakke 1, som kurven på plejer.dk laver den
+          # Som kunden i kurven: først den første GLS-pakkeshop ved 2300, så en rigtig betalingsside hos Stripe for én Pakke 1.
+          # Fejler en af delene, bliver workflowet rødt.
           sleep 5
           curl -sS "$KASSE/"; echo
-          SVAR=$(curl -sS -X POST "$KASSE/kasse" -H 'origin: https://plejer.dk' -H 'content-type: application/json' -d '{"varer":[{"id":"pakke-1","antal":1}],"sprog":"da","sti":"/"}')
+          SHOP=""
+          if curl -sS "$KASSE/" | grep -q '"shipmondo":true'; then
+            ID=$(curl -sS "$KASSE/pakkeshops?firma=gls&postnr=2300" -H 'origin: https://plejer.dk' | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{let l=[];try{l=JSON.parse(d).pakkeshops||[]}catch(e){}process.stdout.write(l.length?l[0].id:"")})')
+            [ -n "$ID" ] || { echo "::error::Kassen kunne ikke finde pakkeshops hos Shipmondo"; exit 1; }
+            echo "Første GLS-pakkeshop ved 2300: $ID"
+            SHOP=",\"pakkeshop\":{\"firma\":\"gls\",\"postnr\":\"2300\",\"id\":\"$ID\"}"
+          else
+            echo "::warning::Shipmondo er ikke sat op. Betalingen prøves uden pakkeshop."
+          fi
+          SVAR=$(curl -sS -X POST "$KASSE/kasse" -H 'origin: https://plejer.dk' -H 'content-type: application/json' -d "{\"varer\":[{\"id\":\"pakke-1\",\"antal\":1}],\"sprog\":\"da\",\"sti\":\"/\"$SHOP}")
           echo "$SVAR" | grep -q '"url":"https://checkout.stripe.com/' || { echo "::error::Kassen kunne ikke lave en betaling hos Stripe: $SVAR"; exit 1; }
           echo "Kassen laver betalingssider hos Stripe."
 
