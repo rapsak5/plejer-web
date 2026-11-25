@@ -56,7 +56,9 @@ jobs:
           echo "CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID" >> "$GITHUB_ENV"
           echo "::add-mask::$CLOUDFLARE_API_TOKEN"
           # Tjek tokenet først, så fejlen er til at forstå
+          # Brugertokens tjekkes under /user, kontotokens under /accounts/<id>
           SVAR=$(curl -sS https://api.cloudflare.com/client/v4/user/tokens/verify -H "authorization: Bearer $CLOUDFLARE_API_TOKEN")
+          echo "$SVAR" | grep -q '"status":"active"' || SVAR=$(curl -sS "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/tokens/verify" -H "authorization: Bearer $CLOUDFLARE_API_TOKEN")
           echo "$SVAR" | grep -q '"status":"active"' || { echo "::error::CLOUDFLARE_API_TOKEN virker ikke (Cloudflare svarer: $(echo "$SVAR" | grep -o '"message":"[^"]*"' | head -1)). Lav et nyt token med skabelonen Edit Cloudflare Workers, og læg det i GitHub igen."; exit 1; }
           echo "Cloudflare-tokenet er aktivt (${#CLOUDFLARE_API_TOKEN} tegn)."
           npx --yes wrangler@4 deploy
