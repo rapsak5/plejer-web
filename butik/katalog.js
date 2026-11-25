@@ -17,17 +17,16 @@ export const KATALOG = {
   // Ordrenummeret, fx PL-7KQ2MX. Står på takkesiden, i Stripe og i Shipmondo.
   ordrePraefiks: 'PL-',
   skuPraefiks: 'PL-',
-  // Forsendelsesskabelonerne i Shipmondo hedder "Plejer GLS pakkeshop" og "Plejer PostNord pakkeshop".
-  // Kunden vælger fragtfirma i kurven. Shipmondo finder pakkeshoppen nærmest kundens adresse.
+  // Forsendelsesskabelonerne i Shipmondo hedder "Plejer GLS pakkeshop" og "Plejer PostNord pakkeshop"
   skabelon: 'Plejer',
   // Plejer har sin egen Stripe-konto. Kontoudtogsteksten PLEJER.DK står i kontoens indstillinger, ikke her.
   // Moms beregnes af Stripe Tax (inkl. i prisen), så kvitteringen viser momsen, også af fragten.
   stripeTax: true,
   fragt: {
     oere: 4900,
-    // {firma} bliver til GLS eller PostNord
-    navn: { da: '{firma} pakkeshop nærmest din adresse' },
-    til: { da: 'Vi sender pakken til den {firma} pakkeshop, der ligger nærmest adressen herunder. Du får besked på sms og mail, når den kan hentes.' }
+    navn: { da: 'Pakkeshop med GLS eller PostNord' },
+    shop: { da: 'pakkeshop' },
+    til: { da: 'Pakken sendes til pakkeshoppen {shop}. Du får besked på sms og mail, når den kan hentes. Adressen herunder bruges kun til fragtfirmaets besked.' }
   },
   vilkaar: {
     da: 'Ved at betale accepterer du handelsbetingelserne på plejer.dk/betingelser.html. Du har 14 dages fortrydelsesret.'

@@ -1,5 +1,4 @@
 // Kassen til Plejers webshop: en lille Cloudflare Worker, der laver en Stripe-betaling ud fra kurven.
-// 25. nov. 2026: kunden vælger kun GLS eller PostNord. Shipmondo vælger pakkeshoppen nærmest kundens adresse.
 // Kopieret fra StemplerInd (24. nov. 2026). Logikken er den samme, kun katalog, navne og ordreprefiks er Plejers.
 // Kurven ligger i kundens browser. Workeren tager kun imod varenumre og antal og slår selv priserne op
 // i katalog.js, så ingen kan rette prisen i browseren. Betalingssiden er Stripes egen.
@@ -7,7 +6,7 @@
 // Hemmelighed: STRIPE_SECRET_KEY (en begrænset nøgle rk_... eller sk_...). Lægges ind i Cloudflare, aldrig i koden.
 
 import { KATALOG } from './katalog.js';
-import { stripeHaendelse, fragtOere, valgtPakkeshop, valgtFirma, FRAGTFIRMAER } from './fragt.js';
+import { stripeHaendelse, fragtOere, findPakkeshops, valgtPakkeshop, FRAGTFIRMAER } from './fragt.js';
 
 const MAKS_LINJER = 12;
 const MAKS_ANTAL = 50;
@@ -44,18 +43,20 @@ export function tjekKurv(varer, K = KATALOG) {
   });
 }
 
-// Fragtfirmaet fra kurven: gls eller postnord. Kunden vælger ikke selv pakkeshop. Efter betalingen
-// finder Shipmondo den nærmeste ved kundens adresse (se naermestePakkeshop i fragt.js).
-// En gammel kurv sender { pakkeshop: { firma } }, en ny { fragtfirma }. Ukendt eller tomt bliver GLS.
-export function tjekFirma(krop) {
-  const k = krop || {};
-  const f = String(k.fragtfirma || (k.pakkeshop && k.pakkeshop.firma) || 'gls');
-  if (!FRAGTFIRMAER[f]) throw new Error('fragtfirma');
-  return f;
+// Pakkeshoppen fra kurven. Browseren sender firma, postnummer og id. Kassen slår den op igen hos Shipmondo,
+// så navn og adresse på ordren altid kommer fra fragtfirmaet og ikke fra browseren.
+export async function tjekPakkeshop(valg, env, opslag = findPakkeshops) {
+  const v = valg || {};
+  const firma = String(v.firma || ''), postnr = String(v.postnr || ''), id = String(v.id || '');
+  if (!FRAGTFIRMAER[firma] || !/^\d{4}$/.test(postnr) || !/^[A-Za-z0-9_-]{1,40}$/.test(id)) throw new Error('pakkeshop');
+  const liste = await opslag(firma, postnr, env);
+  const shop = liste.find(p => p.id === id);
+  if (!shop) throw new Error('pakkeshop');
+  return Object.assign({ firma }, shop);
 }
 
 // Felterne til Stripe Checkout som formular. Priser i øre, inkl. moms.
-export function sessionFelter({ varer, sprog, sti }, K = KATALOG, ordre = nytOrdrenummer(undefined, K), firma = 'gls') {
+export function sessionFelter({ varer, sprog, sti }, K = KATALOG, ordre = nytOrdrenummer(undefined, K), shop = null) {
   const l = STRIPE_SPROG[sprog] ? sprog : 'da';
   const side = 'https://' + K.domaene + '/' + (K.sti[l] || '');
   const linjer = tjekKurv(varer, K);
@@ -102,12 +103,19 @@ export function sessionFelter({ varer, sprog, sti }, K = KATALOG, ordre = nytOrd
     f.set(`${r}[tax_code]`, TAX_FRAGT);
     f.set('automatic_tax[enabled]', 'true');
   }
-  if (!FRAGTFIRMAER[firma]) firma = 'gls';
-  const fn = FRAGTFIRMAER[firma].navn;
-  f.set(`${r}[display_name]`, ((K.fragt.navn[l] || K.fragt.navn.da).replace('{firma}', fn)).slice(0, 100));
-  const til = (K.fragt.til && (K.fragt.til[l] || K.fragt.til.da)) || '';
-  if (til) f.set('custom_text[shipping_address][message]', til.replace('{firma}', fn).slice(0, 1200));
-  f.set('metadata[fragtfirma]', firma);
+  const shopOrd = (K.fragt.shop && (K.fragt.shop[l] || K.fragt.shop.da)) || '';
+  f.set(`${r}[display_name]`, shop ? (FRAGTFIRMAER[shop.firma].navn + ' ' + shopOrd + ': ' + shop.navn).slice(0, 100) : (K.fragt.navn[l] || K.fragt.navn.da));
+  if (shop) {
+    const til = (K.fragt.til && (K.fragt.til[l] || K.fragt.til.da)) || '';
+    const adr = shop.navn + ', ' + shop.adresse + ', ' + shop.postnr + ' ' + shop.by;
+    if (til) f.set('custom_text[shipping_address][message]', til.replace('{shop}', adr).slice(0, 1200));
+    f.set('metadata[fragtfirma]', shop.firma);
+    f.set('metadata[pakkeshop_id]', shop.id);
+    f.set('metadata[pakkeshop_navn]', shop.navn.slice(0, 200));
+    f.set('metadata[pakkeshop_adresse]', shop.adresse.slice(0, 200));
+    f.set('metadata[pakkeshop_postnr]', shop.postnr);
+    f.set('metadata[pakkeshop_by]', shop.by.slice(0, 100));
+  }
   // Linket til handelsbetingelserne står over betalingsknappen hos Stripe
   if (K.vilkaar && K.vilkaar[l]) f.set('custom_text[submit][message]', K.vilkaar[l]);
   f.set('metadata[kurv]', linjer.map(v => v.antal + 'x' + v.id).join(',').slice(0, 500));
@@ -142,7 +150,6 @@ export function ordreResume(s, nu = Math.floor(Date.now() / 1000)) {
     // Priserne er inkl. 25 % moms, så momsen er en femtedel af beløbet
     moms: (s.total_details && Number.isInteger(s.total_details.amount_tax) && s.total_details.amount_tax > 0) ? s.total_details.amount_tax : Math.round(total - total / 1.25),
     mail: kunde.email || null,
-    fragtfirma: FRAGTFIRMAER[valgtFirma(s)].navn,
     pakkeshop: (() => { const p = valgtPakkeshop(s); return p ? { firma: FRAGTFIRMAER[p.firma].navn, navn: p.navn, adresse: p.adresse, postnr: p.postnr, by: p.by } : null; })(),
     levering: lev ? { navn: lev.name || '', linjer: [a.line1, a.line2].filter(Boolean), postnr: a.postal_code || '', by: a.city || '', land: a.country || '' } : null
   };
@@ -184,6 +191,12 @@ export default {
     if (req.method === 'GET' && url.pathname === '/') return svar({ ok: true, butik: K.domaene, test: String(env.STRIPE_SECRET_KEY || '').includes('_test_'), shipmondo: !!(env.SHIPMONDO_API_USER && env.SHIPMONDO_API_KEY && env.STRIPE_WEBHOOK_SECRET) }, 200, oprindelse);
     // Takkesiden henter ordren her ud fra sessionens id i adressen
     if (req.method === 'GET' && url.pathname === '/ordre') return hentOrdre(url.searchParams.get('id'), env, oprindelse);
+    // Kurven henter pakkeshops nær kundens postnummer her
+    if (req.method === 'GET' && url.pathname === '/pakkeshops') {
+      if (!oprindelse) return svar({ fejl: 'oprindelse' }, 403, null);
+      try { return svar({ pakkeshops: await findPakkeshops(url.searchParams.get('firma'), url.searchParams.get('postnr'), env) }, 200, oprindelse); }
+      catch (e) { return svar({ fejl: e.message }, /^(fragtfirma|postnr)$/.test(e.message) ? 400 : 502, oprindelse); }
+    }
     if (req.method !== 'POST' || url.pathname !== '/kasse') return svar({ fejl: 'ikke-fundet' }, 404, oprindelse);
     if (!oprindelse) return svar({ fejl: 'oprindelse' }, 403, null);
     if (!env.STRIPE_SECRET_KEY) return svar({ fejl: 'mangler-noegle' }, 500, oprindelse);
@@ -195,13 +208,16 @@ export default {
       krop = JSON.parse(tekst);
     } catch { return svar({ fejl: 'ugyldig' }, 400, oprindelse); }
 
-    // Kurven sender kun fragtfirmaet. Pakkeshoppen vælger Shipmondo efter betalingen.
-    let firma;
-    try { firma = tjekFirma(krop); }
-    catch (e) { return svar({ fejl: e.message }, 400, oprindelse); }
+    // Kurven sender den pakkeshop, kunden har valgt. Kassen tjekker den hos Shipmondo.
+    // En ældre kurv uden pakkeshop kan stadig betale, så vælges shoppen i Shipmondo bagefter.
+    let shop = null;
+    if (krop && krop.pakkeshop && env.SHIPMONDO_API_USER && env.SHIPMONDO_API_KEY) {
+      try { shop = await tjekPakkeshop(krop && krop.pakkeshop, env); }
+      catch (e) { return svar({ fejl: e.message === 'shipmondo' ? 'shipmondo' : 'pakkeshop' }, e.message === 'shipmondo' ? 502 : 400, oprindelse); }
+    }
 
     let felter;
-    try { felter = sessionFelter(krop || {}, K, undefined, firma); }
+    try { felter = sessionFelter(krop || {}, K, undefined, shop); }
     catch (e) { return svar({ fejl: e.message }, 400, oprindelse); }
 
     const r = await fetch('https://api.stripe.com/v1/checkout/sessions', {
