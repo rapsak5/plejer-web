@@ -446,18 +446,7 @@ button.knap { font-family: var(--sans); }
 .kurv-firma { display: flex; gap: 8px; margin-bottom: 10px; }
 .kurv-firmavalg { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 1px solid var(--kant); border-radius: 12px; background: var(--papir); font-weight: 600; cursor: pointer; }
 .kurv-firmavalg:has(input:checked) { border-color: var(--groen); box-shadow: inset 0 0 0 1px var(--groen); }
-.kurv-soeg { display: flex; gap: 8px; }
-.kurv-soeg input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--kant); border-radius: 12px; background: var(--papir); color: var(--blaek); font: inherit; font-family: var(--mono); }
-.kurv-soeg .knap { min-height: 44px; padding: 0 14px; white-space: nowrap; }
 .kurv-shopinfo { font-size: 14px; margin: 8px 0 0; }
-.kurv-shops { list-style: none; margin: 10px 0 0; padding: 0; max-height: 240px; overflow-y: auto; border: 1px solid var(--linje); border-radius: 12px; }
-.kurv-shops li + li { border-top: 1px solid var(--linje); }
-.kurv-shops label { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; cursor: pointer; }
-.kurv-shops input { margin-top: 4px; }
-.kurv-shops label > span { display: flex; flex-direction: column; font-size: 15px; }
-.kurv-shops .daempet { font-size: 14px; }
-.kurv-valgt { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--groen-lys); }
-.kurv-valgt p { margin: 0; font-size: 15px; }
 .kurv-sum { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 14px 0 16px; }
 .kurv-sum[hidden] { display: none; }
 .kurv-sum dd { margin: 0; font-family: var(--mono); text-align: right; }

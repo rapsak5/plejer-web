@@ -3,19 +3,17 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import worker, { tjekKurv, sessionFelter, UDELUKKET, nytOrdrenummer, ordreResume, tjekPakkeshop } from '../butik/worker.js';
+import worker, { tjekKurv, sessionFelter, UDELUKKET, nytOrdrenummer, ordreResume, tjekFirma } from '../butik/worker.js';
 import { KATALOG } from '../butik/katalog.js';
 import { kurvDataFil, versioner } from '../butik/konfigurer.mjs';
 
 const fil = n => readFileSync(new URL('../' + n, import.meta.url), 'utf8');
-const SHOPS = [{ id: '1234', navn: 'Netto Amagerbrogade', adresse: 'Amagerbrogade 1', postnr: '2300', by: 'København S', afstand: 300 }];
-const opslag = async (firma, postnr) => (firma === 'gls' && postnr === '2300' ? SHOPS : []);
 
 describe('kassen', () => {
   afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-  it('kataloget har de fire varer med priser i øre og fragt', () => {
-    expect(Object.keys(KATALOG.varer)).toEqual(['pakke-1', 'pakke-2', 'samlet-pakke', 'enkelt-maerke']);
+  it('kataloget har de tre pakker med priser i øre og fragt, ingen enkelte mærker', () => {
+    expect(Object.keys(KATALOG.varer)).toEqual(['pakke-1', 'pakke-2', 'samlet-pakke']);
     for (const v of Object.values(KATALOG.varer)) expect(Number.isInteger(v.oere) && v.oere > 0).toBe(true);
     expect(KATALOG.fragt.oere).toBe(4900);
   });
@@ -59,37 +57,30 @@ describe('kassen', () => {
     expect(sessionFelter({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da' }).get('phone_number_collection[enabled]')).toBe('true');
   });
 
-  it('slår pakkeshoppen op igen og afviser et falsk id', async () => {
-    const shop = await tjekPakkeshop({ firma: 'gls', postnr: '2300', id: '1234', navn: 'Falsk navn', adresse: 'Falsk vej' }, {}, opslag);
-    expect(shop).toEqual(Object.assign({ firma: 'gls' }, SHOPS[0]));
-    await expect(tjekPakkeshop({ firma: 'gls', postnr: '2300', id: '9999' }, {}, opslag)).rejects.toThrow('pakkeshop');
-    await expect(tjekPakkeshop({ firma: 'dhl', postnr: '2300', id: '1234' }, {}, opslag)).rejects.toThrow('pakkeshop');
-    await expect(tjekPakkeshop({ firma: 'gls', postnr: '23', id: '1234' }, {}, opslag)).rejects.toThrow('pakkeshop');
-    await expect(tjekPakkeshop({ firma: 'gls', postnr: '2300', id: '<script>' }, {}, opslag)).rejects.toThrow('pakkeshop');
-    await expect(tjekPakkeshop(null, {}, opslag)).rejects.toThrow('pakkeshop');
+  it('tager kun imod GLS eller PostNord og bruger GLS, hvis kurven intet siger', () => {
+    expect(tjekFirma({ fragtfirma: 'postnord' })).toBe('postnord');
+    expect(tjekFirma({ fragtfirma: 'gls' })).toBe('gls');
+    expect(tjekFirma({})).toBe('gls');
+    expect(tjekFirma(null)).toBe('gls');
+    // Den gamle kurv sendte firmaet inde i pakkeshop
+    expect(tjekFirma({ pakkeshop: { firma: 'postnord', postnr: '2300', id: '1234' } })).toBe('postnord');
+    expect(() => tjekFirma({ fragtfirma: 'dhl' })).toThrow('fragtfirma');
   });
 
-  it('viser den valgte pakkeshop hos Stripe og gemmer den i metadata', async () => {
-    const shop = await tjekPakkeshop({ firma: 'gls', postnr: '2300', id: '1234' }, {}, opslag);
-    const f = sessionFelter({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da' }, KATALOG, 'PL-TEST01', shop);
-    expect(f.get('shipping_options[0][shipping_rate_data][display_name]')).toBe('GLS pakkeshop: Netto Amagerbrogade');
-    expect(f.get('custom_text[shipping_address][message]')).toContain('Netto Amagerbrogade, Amagerbrogade 1, 2300 København S');
-    expect(f.get('metadata[fragtfirma]')).toBe('gls');
-    expect(f.get('metadata[pakkeshop_id]')).toBe('1234');
-    expect(f.get('metadata[pakkeshop_navn]')).toBe('Netto Amagerbrogade');
-    expect(f.get('metadata[pakkeshop_adresse]')).toBe('Amagerbrogade 1');
-    expect(f.get('metadata[pakkeshop_postnr]')).toBe('2300');
-    expect(f.get('metadata[pakkeshop_by]')).toBe('København S');
-    const lang = Object.assign({}, shop, { navn: 'X'.repeat(200) });
-    expect(sessionFelter({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da' }, KATALOG, 'PL-TEST01', lang).get('shipping_options[0][shipping_rate_data][display_name]').length).toBe(100);
-    // En ældre kurv uden pakkeshop kan stadig betale i overgangen
-    const uden = sessionFelter({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da' });
-    expect(uden.get('metadata[pakkeshop_id]')).toBeNull();
-    expect(uden.get('shipping_options[0][shipping_rate_data][display_name]')).toBe(KATALOG.fragt.navn.da);
+  it('fortæller hos Stripe, at Shipmondo vælger pakkeshoppen nærmest adressen', () => {
+    const f = sessionFelter({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da' }, KATALOG, 'PL-TEST01', 'postnord');
+    expect(f.get('shipping_options[0][shipping_rate_data][display_name]')).toBe('PostNord pakkeshop nærmest din adresse');
+    expect(f.get('custom_text[shipping_address][message]')).toContain('PostNord pakkeshop, der ligger nærmest adressen herunder');
+    expect(f.get('metadata[fragtfirma]')).toBe('postnord');
+    expect(f.get('metadata[pakkeshop_id]')).toBeNull();
+    const standard = sessionFelter({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da' });
+    expect(standard.get('metadata[fragtfirma]')).toBe('gls');
+    expect(standard.get('shipping_options[0][shipping_rate_data][display_name]')).toBe('GLS pakkeshop nærmest din adresse');
+    expect(sessionFelter({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da' }, KATALOG, 'PL-TEST01', 'dhl').get('metadata[fragtfirma]')).toBe('gls');
   });
 
   it('beregner momsen med Stripe Tax inkl. i prisen, også af fragten', () => {
-    const f = sessionFelter({ varer: [{ id: 'pakke-1', antal: 1 }, { id: 'enkelt-maerke', antal: 2 }], sprog: 'da' });
+    const f = sessionFelter({ varer: [{ id: 'pakke-1', antal: 1 }, { id: 'pakke-2', antal: 2 }], sprog: 'da' });
     expect(f.get('automatic_tax[enabled]')).toBe('true');
     expect(f.get('line_items[0][price_data][tax_behavior]')).toBe('inclusive');
     expect(f.get('line_items[1][price_data][tax_behavior]')).toBe('inclusive');
@@ -101,9 +92,10 @@ describe('kassen', () => {
     expect([...uden.keys()].some(k => k.includes('tax'))).toBe(false);
   });
 
-  it('spørger efter hvilke mærker, når der er enkelte mærker i kurven', () => {
-    const f = sessionFelter({ varer: [{ id: 'pakke-1', antal: 1 }, { id: 'enkelt-maerke', antal: 3 }], sprog: 'da' });
-    expect(f.get('custom_fields[0][key]')).toBe('maerker');
+  it('spørger på betalingssiden, hvis en vare har et spørgsmål', () => {
+    const K = Object.assign({}, KATALOG, { varer: Object.assign({}, KATALOG.varer, { prove: { oere: 100, navn: { da: 'Prøve' }, spoerg: { noegle: 'farve', tekst: { da: 'Hvilken farve?' } } } }) });
+    const f = sessionFelter({ varer: [{ id: 'pakke-1', antal: 1 }, { id: 'prove', antal: 1 }], sprog: 'da' }, K);
+    expect(f.get('custom_fields[0][key]')).toBe('farve');
     expect(f.get('custom_fields[0][type]')).toBe('text');
     expect(f.get('custom_fields[0][label][custom]').length).toBeLessThanOrEqual(50);
   });
@@ -134,11 +126,11 @@ describe('kassen', () => {
     expect(f.get('payment_intent_data[statement_descriptor_suffix]')).toBeNull();
   });
 
-  it('takkesiden får varer, fragt, total, moms og pakkeshop, men intet om kortet', () => {
+  it('takkesiden får varer, fragt, total, moms, fragtfirma og pakkeshop, men intet om kortet', () => {
     const nu = 1795000000;
     const s = {
       id: 'cs_test_abc', created: nu - 60, livemode: false, currency: 'dkk', payment_status: 'paid', amount_total: 32600,
-      metadata: { ordre: 'PL-TEST42', kurv: '1xpakke-1,2xenkelt-maerke', fragtfirma: 'postnord', pakkeshop_id: '1234', pakkeshop_navn: 'Netto', pakkeshop_adresse: 'Amagerbrogade 1', pakkeshop_postnr: '2300', pakkeshop_by: 'København S' },
+      metadata: { ordre: 'PL-TEST42', kurv: '1xpakke-1,2xpakke-2', fragtfirma: 'postnord', pakkeshop_id: '1234', pakkeshop_navn: 'Netto', pakkeshop_adresse: 'Amagerbrogade 1', pakkeshop_postnr: '2300', pakkeshop_by: 'København S' },
       shipping_cost: { amount_total: 4900 },
       customer_details: { email: 'kunde@example.dk', name: 'Kort Navn', phone: '+4524425425' },
       collected_information: { shipping_details: { name: 'Ane Kunde', address: { line1: 'Vej 1', line2: null, postal_code: '2300', city: 'København S', country: 'DK' } } },
@@ -148,6 +140,8 @@ describe('kassen', () => {
     const o = ordreResume(s, nu);
     expect(o).toMatchObject({ ordre: 'PL-TEST42', betalt: true, test: true, total: 32600, fragt: 4900, moms: 6520, mail: 'kunde@example.dk', valuta: 'DKK' });
     expect(o.varer).toEqual([{ navn: 'Pakke 1, 8 hvide mærker', antal: 1, beloeb: 19900 }, { navn: 'Enkelt mærke', antal: 2, beloeb: 7800 }]);
+    expect(o.fragtfirma).toBe('PostNord');
+    expect(ordreResume(Object.assign({}, s, { metadata: { ordre: 'PL-TEST43', fragtfirma: 'gls' } }), nu)).toMatchObject({ fragtfirma: 'GLS', pakkeshop: null });
     expect(o.pakkeshop).toEqual({ firma: 'PostNord', navn: 'Netto', adresse: 'Amagerbrogade 1', postnr: '2300', by: 'København S' });
     expect(JSON.stringify(o)).not.toMatch(/card|payment_method|three_d|\+45/);
     // Stripe Tax: momsen tages fra Stripe, når den findes
@@ -182,30 +176,25 @@ describe('kassen som Worker', () => {
     expect((await kald('/kasse', { method: 'OPTIONS' })).headers.get('access-control-allow-origin')).toBe('https://plejer.dk');
     expect((await kald('/kasse', { method: 'OPTIONS' }, 'https://www.plejer.dk')).status).toBe(204);
     expect((await kald('/kasse', { method: 'POST', body: '{}' }, 'https://stemplerind.dk')).status).toBe(403);
-    expect((await kald('/pakkeshops?firma=gls&postnr=2300', {}, 'https://ond.example')).status).toBe(403);
+    expect((await kald('/pakkeshops?firma=gls&postnr=2300')).status).toBe(404);
     expect((await kald('/ordre?id=cs_test_abcdefghijkl', {}, 'https://ond.example')).status).toBe(403);
   });
 
-  it('afviser et falsk pakkeshop-id ved betaling og laver betalingen med et rigtigt', async () => {
+  it('laver betalingen med fragtfirmaet og spørger ikke Shipmondo før betalingen', async () => {
     const stripe = [];
     falskeTjenester(stripe);
-    const falsk = await kald('/kasse', { method: 'POST', body: JSON.stringify({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da', pakkeshop: { firma: 'gls', postnr: '2300', id: '9999' } }) });
-    expect(falsk.status).toBe(400);
-    expect(await falsk.json()).toEqual({ fejl: 'pakkeshop' });
-    expect(stripe).toHaveLength(0);
-    const ok = await kald('/kasse', { method: 'POST', body: JSON.stringify({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da', pakkeshop: { firma: 'gls', postnr: '2300', id: '1234' } }) });
+    const ok = await kald('/kasse', { method: 'POST', body: JSON.stringify({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da', fragtfirma: 'postnord' }) });
     expect((await ok.json()).url).toMatch(/^https:\/\/checkout\.stripe\.com\//);
-    expect(stripe[0].get('metadata[pakkeshop_by]')).toBe('København S');
+    expect(stripe[0].get('metadata[fragtfirma]')).toBe('postnord');
     expect(stripe[0].get('metadata[ordre]')).toMatch(/^PL-/);
-  });
-
-  it('pakkeshop-listen kommer fra Shipmondo med pæne bynavne', async () => {
-    falskeTjenester();
-    const r = await kald('/pakkeshops?firma=postnord&postnr=2300');
-    expect((await r.json()).pakkeshops[0]).toMatchObject({ id: '1234', by: 'København S' });
-    expect((await kald('/pakkeshops?firma=dhl&postnr=2300')).status).toBe(400);
-    expect((await kald('/pakkeshops?firma=gls&postnr=23')).status).toBe(400);
-    expect(String(fetch.mock.calls[0][0])).toContain('carrier_code=pdk&country_code=DK&zipcode=2300&quantity=25');
+    expect(fetch.mock.calls.some(([u]) => String(u).includes('shipmondo'))).toBe(false);
+    // Den gamle kurv med en valgt pakkeshop kan stadig betale. Shoppen bruges ikke, kun firmaet.
+    await kald('/kasse', { method: 'POST', body: JSON.stringify({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da', pakkeshop: { firma: 'gls', postnr: '2300', id: '1234' } }) });
+    expect(stripe[1].get('metadata[fragtfirma]')).toBe('gls');
+    expect(stripe[1].get('metadata[pakkeshop_id]')).toBeNull();
+    const forkert = await kald('/kasse', { method: 'POST', body: JSON.stringify({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da', fragtfirma: 'dhl' }) });
+    expect(forkert.status).toBe(400);
+    expect(stripe).toHaveLength(2);
   });
 
   it('takkesiden kan kun hente ordrer med et rigtigt session-id', async () => {
@@ -243,7 +232,7 @@ describe('hjemmesiden passer til kassen', () => {
       expect(m, id).toBeTruthy();
       expect(m[1]).toBe(kr(id));
     }
-    expect(html).toContain('Enkelte mærker til efterbestilling: ' + kr('enkelt-maerke') + ' kr.');
+    expect(html).not.toMatch(/enkelte mærker|enkelt-maerke/i);
     expect(html).toContain('Fragt ' + KATALOG.fragt.oere / 100 + ' kr.');
     for (const [, id] of html.matchAll(/data-kurv="([^"]+)"/g)) expect(KATALOG.varer[id], id).toBeTruthy();
   });
@@ -261,9 +250,10 @@ describe('hjemmesiden passer til kassen', () => {
     for (const t of ['CVR 40989102', 'Ove Billes Vej 7', 'inkl. 25 % moms', 'Fragt koster ' + KATALOG.fragt.oere / 100 + ' kr.', 'GLS eller PostNord', 'pakkeshop', '3 hverdage', '14 dages fortrydelsesret', '2 års reklamationsret', 'Nævnenes Hus', 'Standardfortrydelsesformular']) expect(b, t).toContain(t);
   });
 
-  it('privatlivspolitikken nævner kurven, Stripe, Shipmondo, fragtfirmaet og postnummeret', () => {
+  it('privatlivspolitikken nævner kurven, Stripe, Shipmondo, fragtfirmaet og adressen til pakkeshoppen', () => {
     const p = fil('privatliv.html');
-    for (const t of ['kurven kun i din egen browser', 'Stripe', 'Shipmondo og fragtfirmaet (GLS eller PostNord)', 'telefonnummer', 'den pakkeshop, du har valgt', 'Postnummeret, du søger pakkeshops med, sendes til Shipmondo og gemmes ikke']) expect(p, t).toContain(t);
+    for (const t of ['kurven kun i din egen browser', 'Stripe', 'Shipmondo og fragtfirmaet (GLS eller PostNord)', 'telefonnummer', 'Shipmondo bruger adressen til at finde den pakkeshop, der ligger nærmest dig']) expect(p, t).toContain(t);
+    expect(fil('betingelser.html')).toContain('den pakkeshop, der ligger nærmest din adresse');
   });
 
   it('fortrydelsesknappen har to trin og kvittering med tidspunkt', () => {
@@ -289,10 +279,10 @@ describe('hjemmesiden passer til kassen', () => {
     expect(fil('kurv-data.js')).not.toMatch(/som brev/i);
   });
 
-  it('workflowet prøver pakkeshops og en rigtig betalingsside efter udgivelsen', () => {
+  it('workflowet prøver en rigtig betalingsside med fragtfirma efter udgivelsen', () => {
     const w = fil('.github/workflows/butik.yml');
-    expect(w).toContain('/pakkeshops?firma=gls&postnr=2300');
-    expect(w).toContain('\\"pakkeshop\\"');
+    expect(w).not.toContain('/pakkeshops');
+    expect(w).toContain('\\"fragtfirma\\":\\"gls\\"');
     expect(w).toContain("tr -d '\\r\\n'");
     expect(w).toContain('wrangler@4 deploy');
   });

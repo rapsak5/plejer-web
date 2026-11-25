@@ -8,8 +8,8 @@ Ingen faste udgifter: Cloudflares gratis plan, Shipmondos gratis plan og Stripes
 | --- | --- |
 | `katalog.js` | Priser, varer, fragt, kassens adresse og om butikken er åben. Den eneste kilde til priser |
 | `konfigurer.mjs` | Laver `../kurv-data.js` til hjemmesiden ud fra kataloget |
-| `worker.js` | Kassen. Tjekker kurven og pakkeshoppen, laver betalingen hos Stripe og viser ordren på takkesiden |
-| `fragt.js` | Pakkeshops fra Shipmondo og betalte ordrer fra Stripe til Shipmondo |
+| `worker.js` | Kassen. Tjekker kurven og fragtfirmaet, laver betalingen hos Stripe og viser ordren på takkesiden |
+| `fragt.js` | Betalte ordrer fra Stripe til Shipmondo. Shipmondo finder pakkeshoppen nærmest kundens adresse |
 | `wrangler.toml` | Navnet på kassen hos Cloudflare: `plejer-butik` |
 | `../kurv.js` | Kurven på hjemmesiden |
 | `../tak.html` | Takkesiden efter betaling |
@@ -56,17 +56,17 @@ Kasper taster selv alle nøgler. De lægges som hemmeligheder i GitHub og aldrig
 | `SHIPMONDO_API_USER` | Samme som StemplerInd |
 | `SHIPMONDO_API_KEY` | Samme som StemplerInd |
 
-Kør Actions › Kasse til webshoppen › Run workflow. Den tester, udgiver kassen, lægger nøglerne i Cloudflare, henter GLS-pakkeshops ved 2300 og laver en rigtig betalingsside. Når den er grøn, svarer `https://plejer-butik.stemplerind.workers.dev` med `{"ok":true,"butik":"plejer.dk","test":true,"shipmondo":true}`.
+Kør Actions › Kasse til webshoppen › Run workflow. Den tester, udgiver kassen, lægger nøglerne i Cloudflare og laver en rigtig betalingsside. Når den er grøn, svarer `https://plejer-butik.stemplerind.workers.dev` med `{"ok":true,"butik":"plejer.dk","test":true,"shipmondo":true}`.
 
-**5. Rækkefølge.** Udgiv kassen før hjemmesiden. Kassen tager stadig imod en kurv uden pakkeshop, så betalingen virker i overgangen. Tjek bagefter på plejer.dk, at siden henter `kurv.js?v=...`, og at listen kommer for både GLS og PostNord ved 2300.
+**5. Rækkefølge.** Udgiv kassen før hjemmesiden. Kassen tager også imod den gamle kurv med en valgt pakkeshop (den bruger kun fragtfirmaet). Tjek bagefter på plejer.dk, at siden henter `kurv.js?v=...`.
 
-**6. Test.** Åbn `https://plejer.dk/?butik=test`, læg varer i kurven, vælg pakkeshop, og betal med 4242 4242 4242 4242. Tjek takkesiden og den tomme kurv, betalingen i Stripe, ordren i Shipmondo (beløb, moms 25 %, telefon, pakkeshop, skabelon) og at webhooken svarede 200.
+**6. Test.** Åbn `https://plejer.dk/?butik=test`, læg varer i kurven, vælg GLS eller PostNord, og betal med 4242 4242 4242 4242 og en rigtig dansk adresse. Tjek takkesiden og den tomme kurv, betalingen i Stripe, ordren i Shipmondo (beløb, moms 25 %, telefon, pakkeshop, skabelon) og at webhooken svarede 200.
 
 **7. Live.** Lav `rk_live_` og en live-webhook i Plejers Stripe-konto. Ret de to secrets i GitHub, og kør workflowet. Statuslampen skal vise `test:false`.
 
 ## Bemærk
 
-- Pakkeshops: `GET /pakkeshops?firma=gls|postnord&postnr=NNNN`. PostNords kode hos Shipmondo er `pdk`. Butikker vises før pakkebokse, højst 12. Svaret gemmes et døgn hos Cloudflare, fordi Shipmondos gratis plan har 1.000 opslag om måneden. Tæl versionen i cachenøglen op i `fragt.js`, når listens form ændres.
+- Pakkeshop (25. nov. 2026): kunden vælger kun GLS eller PostNord i kurven. Når Stripe melder betalingen, spørger kassen Shipmondo (`/pickup_points` med postnummer og vej) og lægger den nærmeste bemandede pakkeshop på ordren. Pakkebokse bruges kun, hvis der ingen butik er. Finder Shipmondo ingen, kommer ordren ind uden pakkeshop, og den vælges i Shipmondo. Ét opslag pr. ordre. PostNords kode hos Shipmondo er `pdk`.
 - Versionsnøgler: `node butik/konfigurer.mjs` sætter `?v=` på `kurv.js`, `kurv-data.js` og `stil.css` i alle sider. Testene fejler, hvis det er glemt.
 - Fortrydelser går gennem FormSubmit til kasper@ai-workshop.dk.
 - Stripe kører Visa/Dankort som Visa. Rene Dankort virker ikke. Ingen Klarna og ingen MobilePay.

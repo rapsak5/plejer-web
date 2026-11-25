@@ -22,10 +22,6 @@ window.KURV = {
   "samlet-pakke": {
    "navn": "Samlet pakke, 16 mærker",
    "pris": 349
-  },
-  "enkelt-maerke": {
-   "navn": "Enkelt mærke",
-   "pris": 39
   }
  },
  "t": {
@@ -43,13 +39,7 @@ window.KURV = {
   "kurvFaerre": "Én mindre",
   "kurvTak": "Tak for din ordre. Kvitteringen kommer på mail.",
   "kurvLevering": "Levering til pakkeshop",
-  "kurvPostnr": "Dit postnummer",
-  "kurvFind": "Find pakkeshops",
-  "kurvVaelg": "Vælg en pakkeshop, før du betaler.",
-  "kurvIngen": "Vi fandt ingen pakkeshops ved det postnummer. Prøv et andet.",
-  "kurvShopFejl": "Pakkeshops kunne ikke hentes lige nu. Prøv igen om lidt.",
-  "kurvPostnrFejl": "Skriv et postnummer med 4 cifre.",
-  "kurvSkift": "Skift",
+  "kurvNaermest": "Vi sender til den pakkeshop, der ligger nærmest din adresse. Du får besked på sms og mail, når pakken kan hentes.",
   "kurvFejl": "Betalingen kunne ikke startes. Prøv igen, eller skriv til {mail}.",
   "kurvVent": "Et øjeblik",
   "kurvStripe": "Betalingen sker hos Stripe.",

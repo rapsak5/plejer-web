@@ -1,6 +1,7 @@
 // Betalt ordre fra Stripe til Shipmondo. Kopieret fra StemplerInd (24. nov. 2026).
 // Stripe kalder /stripe, når en betaling er gennemført (hændelsen checkout.session.completed).
-// Vi tjekker Stripes underskrift og opretter en ordre i Shipmondo med adresse, varer og fragt.
+// Vi tjekker Stripes underskrift, beder Shipmondo om den nærmeste pakkeshop ved kundens adresse
+// hos det fragtfirma, kunden valgte, og opretter en ordre i Shipmondo med adresse, pakkeshop, varer og fragt.
 // I Shipmondo vælger Kasper ordren og printer labelen.
 //
 // Hemmeligheder i Cloudflare: STRIPE_WEBHOOK_SECRET (whsec_...), SHIPMONDO_API_USER og SHIPMONDO_API_KEY.
@@ -12,7 +13,7 @@ const MOMS = 25;
 // Shipmondo vil have momsen som brøk: 25 % skrives 0.25. Står der 25, ganger Shipmondo prisen med 26.
 const MOMS_BROEK = MOMS / 100;
 const TOLERANCE_SEK = 300;
-// Fragtfirmaer, kunden kan vælge pakkeshop hos. Nøglen står i kurven og på betalingen, koden er Shipmondos.
+// Fragtfirmaer, kunden kan vælge i kurven. Nøglen står i kurven og på betalingen, koden er Shipmondos.
 export const FRAGTFIRMAER = { gls: { kode: 'gls', navn: 'GLS' }, postnord: { kode: 'pdk', navn: 'PostNord' } };
 
 const kr = oere => Math.round(oere) / 100;
@@ -53,18 +54,30 @@ export function telefon(nr, land = 'DK') {
   return t;
 }
 
-// Pakkeshoppen, kunden valgte i kurven. Kassen har slået den op hos Shipmondo og lagt den på betalingen.
+// Fragtfirmaet, kunden valgte i kurven. GLS, hvis betalingen ikke siger andet.
+export function valgtFirma(s) {
+  const f = (s && s.metadata && s.metadata.fragtfirma) || '';
+  return FRAGTFIRMAER[f] ? f : 'gls';
+}
+
+// Pakkeshop lagt på betalingen af den gamle kurv, hvor kunden selv valgte shoppen. Nye betalinger har ingen.
 export function valgtPakkeshop(s) {
   const m = s.metadata || {};
   if (!m.pakkeshop_id || !FRAGTFIRMAER[m.fragtfirma]) return null;
   return { firma: m.fragtfirma, id: m.pakkeshop_id, navn: m.pakkeshop_navn || '', adresse: m.pakkeshop_adresse || '', postnr: m.pakkeshop_postnr || '', by: m.pakkeshop_by || '' };
 }
 
-// Laver Shipmondos ordre ud fra Stripes Checkout Session og kataloget. Priser i kataloget er inkl. moms.
-export function shipmondoOrdre(s, K, skabelonId) {
+// Kundens leveringsadresse fra Stripe
+export function kundeAdresse(s) {
   const fragtAdr = (s.collected_information && s.collected_information.shipping_details) || s.shipping_details || {};
   const kunde = s.customer_details || {};
-  const a = fragtAdr.address || kunde.address || {};
+  return { fragtAdr, kunde, a: fragtAdr.address || kunde.address || {} };
+}
+
+// Laver Shipmondos ordre ud fra Stripes Checkout Session og kataloget. Priser i kataloget er inkl. moms.
+// shop: pakkeshoppen, Shipmondo fandt nærmest kundens adresse. Uden shop bruges en shop fra den gamle kurv, hvis der er en.
+export function shipmondoOrdre(s, K, skabelonId, shop = null) {
+  const { fragtAdr, kunde, a } = kundeAdresse(s);
   const modtager = {
     name: fragtAdr.name || kunde.name || '',
     address1: a.line1 || '',
@@ -77,7 +90,7 @@ export function shipmondoOrdre(s, K, skabelonId) {
     telephone: telefon(kunde.phone, a.country || 'DK')
   };
   const valuta = String(s.currency || 'dkk').toUpperCase();
-  // Svar fra Stripes ekstra felter, fx hvilke enkelte mærker kunden vil have
+  // Svar fra Stripes ekstra felter, hvis en vare spørger om noget
   const svar = Object.fromEntries((s.custom_fields || []).map(c => [c.key, String((c.text && c.text.value) || '').trim()]));
   const linjer = String((s.metadata && s.metadata.kurv) || '').split(',').filter(Boolean).map(d => {
     const i = d.indexOf('x'), antal = d.slice(0, i), id = d.slice(i + 1);
@@ -87,7 +100,7 @@ export function shipmondoOrdre(s, K, skabelonId) {
     return { line_type: 'item', item_name: (v.navn.da + ekstra).slice(0, 250), item_sku: (K.skuPraefiks || 'PL-') + id.toUpperCase(), quantity: Number(antal), unit_price_excluding_vat: udenMoms(v.oere), vat_percent: MOMS_BROEK, currency_code: valuta };
   });
   const fragt = fragtOere(s, linjer.map(l => Math.round(l.unit_price_excluding_vat * (1 + MOMS / 100) * 100) * l.quantity));
-  if (fragt) linjer.push({ line_type: 'shipping', item_name: K.fragt.navn.da, quantity: 1, unit_price_excluding_vat: udenMoms(fragt), vat_percent: MOMS_BROEK, currency_code: valuta });
+  if (fragt) linjer.push({ line_type: 'shipping', item_name: K.fragt.navn.da.replace('{firma}', FRAGTFIRMAER[valgtFirma(s)].navn), quantity: 1, unit_price_excluding_vat: udenMoms(fragt), vat_percent: MOMS_BROEK, currency_code: valuta });
   const total = s.amount_total || 0;
   const ordre = {
     order_id: (s.metadata && s.metadata.ordre) || s.id,
@@ -98,7 +111,7 @@ export function shipmondoOrdre(s, K, skabelonId) {
     payment_details: { amount_including_vat: kr(total), amount_excluding_vat: udenMoms(total), authorized_amount: kr(total), vat_amount: Math.round(total - total / (1 + MOMS / 100)) / 100, vat_percent: MOMS_BROEK, currency_code: valuta, payment_method: 'Stripe', transaction_id: typeof s.payment_intent === 'string' ? s.payment_intent : (s.payment_intent && s.payment_intent.id) || s.id },
     order_lines: linjer
   };
-  const shop = valgtPakkeshop(s);
+  if (!shop) shop = valgtPakkeshop(s);
   if (shop) ordre.service_point = { id: shop.id, name: shop.navn, address1: shop.adresse, zipcode: shop.postnr, city: shop.by, country_code: 'DK' };
   if (skabelonId) ordre.shipment_template_id = skabelonId;
   return ordre;
@@ -127,9 +140,8 @@ async function findSkabelon(env, firma, K) {
   } catch { return null; }
 }
 
-// Pakkeshops nær et postnummer hos GLS eller PostNord. Svaret gemmes et døgn hos Cloudflare,
-// fordi Shipmondo tæller opslagene. Kun det, kurven skal vise.
-// Pakkebokse (fx PostNords Nærboks) kommer efter de bemandede pakkeshops, så kunden også ser butikker.
+// Pakkeshops hos GLS eller PostNord, sorteret efter afstand af Shipmondo. Kun det, kassen skal bruge.
+// Pakkebokse (fx PostNords Nærboks) kommer efter de bemandede pakkeshops, så pakken helst sendes til en butik.
 const BOKS = /n(æ|ae)rboks|pakkeboks|parcel ?locker|pakkeautomat/i;
 export const erBoks = p => BOKS.test(p.navn);
 // PostNord skriver byen med store bogstaver. "KØBENHAVN S" bliver "København S".
@@ -146,20 +158,28 @@ export function pakkeshopListe(data, maks = 12) {
   return alle.filter(p => !erBoks(p)).concat(alle.filter(erBoks)).slice(0, maks);
 }
 
-export async function findPakkeshops(firma, postnr, env) {
+// Shipmondo finder pakkeshops nær kundens adresse. Vejnavnet sendes med, så den nærmeste kommer først.
+export async function findPakkeshops(firma, postnr, env, adresse = '') {
   if (!FRAGTFIRMAER[firma]) throw new Error('fragtfirma');
   if (!/^\d{4}$/.test(String(postnr || ''))) throw new Error('postnr');
   if (!env.SHIPMONDO_API_USER || !env.SHIPMONDO_API_KEY) throw new Error('mangler-shipmondo');
-  const sti = '/pickup_points?carrier_code=' + FRAGTFIRMAER[firma].kode + '&country_code=DK&zipcode=' + postnr + '&quantity=25';
-  const cache = typeof caches !== 'undefined' ? caches.default : null;
-  // Versionen i nøglen skal tælles op, når listens form ændres, så gamle lister i Cloudflares cache ikke bruges
-  const noegle = 'https://pakkeshops.plejer.invalid/v1/' + firma + '/' + postnr;
-  if (cache) { const gemt = await cache.match(noegle).catch(() => null); if (gemt) return gemt.json(); }
+  let sti = '/pickup_points?carrier_code=' + FRAGTFIRMAER[firma].kode + '&country_code=DK&zipcode=' + postnr + '&quantity=10';
+  if (adresse) sti += '&address=' + encodeURIComponent(String(adresse).slice(0, 100));
   const r = await shipmondo(sti, env);
   if (!r.ok) { console.log('Shipmondo pakkeshops', r.status, (await r.text()).slice(0, 200)); throw new Error('shipmondo'); }
-  const liste = pakkeshopListe(await r.json());
-  if (cache && liste.length) await cache.put(noegle, new Response(JSON.stringify(liste), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=86400' } })).catch(() => {});
-  return liste;
+  return pakkeshopListe(await r.json());
+}
+
+// Den pakkeshop, ordren sendes til: den første i Shipmondos liste ved kundens adresse.
+// Findes ingen, eller svarer Shipmondo ikke, laves ordren uden pakkeshop, og Kasper vælger den i Shipmondo.
+export async function naermestePakkeshop(s, env, opslag = findPakkeshops) {
+  const { a } = kundeAdresse(s);
+  const postnr = String(a.postal_code || '').replace(/\s/g, '');
+  if ((a.country || 'DK') !== 'DK' || !/^\d{4}$/.test(postnr)) return null;
+  try {
+    const liste = await opslag(valgtFirma(s), postnr, env, a.line1 || '');
+    return liste[0] || null;
+  } catch (e) { console.log('Ingen pakkeshop fundet', s.id, e.message); return null; }
 }
 
 // Svarer Stripe. 200 = færdig, 500 = Stripe prøver igen senere.
@@ -175,8 +195,9 @@ export async function stripeHaendelse(req, env, K) {
   if (s.metadata && s.metadata.butik && s.metadata.butik !== K.domaene) return new Response('{"ok":true,"anden-butik":true}', { status: 200 });
   if (!env.SHIPMONDO_API_USER || !env.SHIPMONDO_API_KEY) { console.log('Shipmondo mangler nøgle, ordre', s.id); return new Response('{"ok":true,"shipmondo":false}', { status: 200 }); }
 
+  const shop = valgtPakkeshop(s) || await naermestePakkeshop(s, env);
   let ordre;
-  try { ordre = shipmondoOrdre(s, K, await findSkabelon(env, (s.metadata || {}).fragtfirma, K)); }
+  try { ordre = shipmondoOrdre(s, K, await findSkabelon(env, valgtFirma(s), K), shop); }
   catch (e) { console.log('Ordren kunne ikke laves', s.id, e.message); return new Response(JSON.stringify({ fejl: e.message }), { status: 200 }); }
 
   const r = await shipmondo('/sales_orders', env, { method: 'POST', body: JSON.stringify(ordre) });
