@@ -43,7 +43,7 @@ Kasper taster selv alle nøgler. De lægges som hemmeligheder i GitHub og aldrig
 - Settings › Communication preferences › Successful payment receipt: til, så Kasper får en mail ved hver ordre. Customer emails › Successful payments: til, så kunden får kvittering.
 - Stripe sender ingen kvitteringer på testbetalinger. Tryk Send receipt på betalingen for at se mailen.
 
-**3. Shipmondo.** Samme konto og saldo som StemplerInd. Skabelonerne **Plejer GLS pakkeshop** (GLS, ShopDelivery) og **Plejer PostNord pakkeshop** (PostNord DK, Service Point, PDK_MC). Fragtaftale Shipmondo, 1 kolli 0 til 1 kg, mail og sms. Kassen vælger skabelonen ud fra navnet: Plejer og fragtfirmaet. API-brugeren fra StemplerInd kan genbruges.
+**3. Shipmondo.** Samme konto og saldo som StemplerInd. Tre skabeloner. **Plejer DAO (brev)** er det primære valg i kurven: dao, daoHOME, leveres til kundens adresse og helst i postkassen (højst 3 kg, 40 cm). Derefter **Plejer GLS pakkeshop** (GLS, ShopDelivery) og **Plejer PostNord pakkeshop** (PostNord DK, Service Point, PDK_MC). Fragtaftale Shipmondo, 1 kolli 0 til 1 kg, mail og sms. Kassen vælger skabelonen ud fra navnet: Plejer og fragtfirmaet. Findes DAO-skabelonen ikke, bruges ingen, og Kasper vælger i Shipmondo. API-brugeren fra StemplerInd kan genbruges.
 
 **4. GitHub.** `rapsak5/plejer-web` › Settings › Secrets and variables › Actions › New repository secret:
 
@@ -66,6 +66,7 @@ Kør Actions › Kasse til webshoppen › Run workflow. Den tester, udgiver kass
 
 ## Bemærk
 
+- DAO (brev): kurven sender `fragtfirma: 'dao'` uden pakkeshop. Kassen sætter `metadata[fragtfirma]=dao`, og Shipmondo-ordren får kundens adresse fra Stripe og ingen `service_point`.
 - Pakkeshops: `GET /pakkeshops?firma=gls|postnord&postnr=NNNN`. PostNords kode hos Shipmondo er `pdk`. Butikker vises før pakkebokse, højst 12. Svaret gemmes et døgn hos Cloudflare, fordi Shipmondos gratis plan har 1.000 opslag om måneden. Tæl versionen i cachenøglen op i `fragt.js`, når listens form ændres.
 - Versionsnøgler: `node butik/konfigurer.mjs` sætter `?v=` på `kurv.js`, `kurv-data.js` og `stil.css` i alle sider. Testene fejler, hvis det er glemt.
 - Fortrydelser går gennem FormSubmit til kasper@ai-workshop.dk.

@@ -17,14 +17,17 @@ export const KATALOG = {
   // Ordrenummeret, fx PL-7KQ2MX. Står på takkesiden, i Stripe og i Shipmondo.
   ordrePraefiks: 'PL-',
   skuPraefiks: 'PL-',
-  // Forsendelsesskabelonerne i Shipmondo hedder "Plejer GLS pakkeshop" og "Plejer PostNord pakkeshop"
+  // Forsendelsesskabelonerne i Shipmondo hedder "Plejer DAO (brev)", "Plejer GLS pakkeshop" og "Plejer PostNord pakkeshop"
   skabelon: 'Plejer',
   // Plejer har sin egen Stripe-konto. Kontoudtogsteksten PLEJER.DK står i kontoens indstillinger, ikke her.
   // Moms beregnes af Stripe Tax (inkl. i prisen), så kvitteringen viser momsen, også af fragten.
   stripeTax: true,
   fragt: {
     oere: 4900,
-    navn: { da: 'Pakkeshop med GLS eller PostNord' },
+    navn: { da: 'DAO (brev) eller pakkeshop med GLS eller PostNord' },
+    // DAO er det primære valg: brev direkte i postkassen
+    hjem: { da: 'DAO (brev) i din postkasse' },
+    tilHjem: { da: 'Mærkerne kommer som brev med DAO direkte i din postkasse. Skriv den adresse, de skal sendes til.' },
     shop: { da: 'pakkeshop' },
     til: { da: 'Pakken sendes til pakkeshoppen {shop}. Du får besked på sms og mail, når den kan hentes. Adressen herunder bruges kun til fragtfirmaets besked.' }
   },

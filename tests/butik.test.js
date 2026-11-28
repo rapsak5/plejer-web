@@ -187,6 +187,21 @@ describe('kassen som Worker', () => {
     expect((await kald('/ordre?id=cs_test_abcdefghijkl', {}, 'https://ond.example')).status).toBe(403);
   });
 
+  it('DAO (brev) betaler uden pakkeshop og sendes til adressen fra Stripe', async () => {
+    const stripe = [];
+    falskeTjenester(stripe);
+    const r = await kald('/kasse', { method: 'POST', body: JSON.stringify({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da', fragtfirma: 'dao' }) });
+    expect((await r.json()).url).toMatch(/^https:\/\/checkout\.stripe\.com\//);
+    expect(stripe[0].get('metadata[fragtfirma]')).toBe('dao');
+    expect(stripe[0].get('metadata[pakkeshop_id]')).toBeNull();
+    expect(stripe[0].get('shipping_options[0][shipping_rate_data][display_name]')).toBe(KATALOG.fragt.hjem.da);
+    expect(stripe[0].get('custom_text[shipping_address][message]')).toContain('postkasse');
+    // Et ukendt fragtfirma uden pakkeshop giver bare den almindelige fragt
+    const dhl = sessionFelter({ varer: [{ id: 'pakke-1', antal: 1 }], sprog: 'da' }, KATALOG, 'PL-X', null, 'dhl');
+    expect(dhl.get('metadata[fragtfirma]')).toBeNull();
+    expect((await kald('/pakkeshops?firma=dao&postnr=2300')).status).toBe(400);
+  });
+
   it('afviser et falsk pakkeshop-id ved betaling og laver betalingen med et rigtigt', async () => {
     const stripe = [];
     falskeTjenester(stripe);
@@ -259,12 +274,12 @@ describe('hjemmesiden passer til kassen', () => {
 
   it('handelsbetingelserne har det, loven kræver', () => {
     const b = fil('betingelser.html');
-    for (const t of ['CVR 40989102', 'Ove Billes Vej 7', 'inkl. 25 % moms', 'Fragt koster ' + KATALOG.fragt.oere / 100 + ' kr.', 'GLS eller PostNord', 'pakkeshop', '3 hverdage', '14 dages fortrydelsesret', '2 års reklamationsret', 'Nævnenes Hus', 'Standardfortrydelsesformular']) expect(b, t).toContain(t);
+    for (const t of ['CVR 40989102', 'Ove Billes Vej 7', 'inkl. 25 % moms', 'Fragt koster ' + KATALOG.fragt.oere / 100 + ' kr.', 'DAO (brev)', 'postkasse', 'GLS eller PostNord', 'pakkeshop', '3 hverdage', '14 dages fortrydelsesret', '2 års reklamationsret', 'Nævnenes Hus', 'Standardfortrydelsesformular']) expect(b, t).toContain(t);
   });
 
   it('privatlivspolitikken nævner kurven, Stripe, Shipmondo, fragtfirmaet og postnummeret', () => {
     const p = fil('privatliv.html');
-    for (const t of ['kurven kun i din egen browser', 'Stripe', 'Shipmondo og fragtfirmaet (GLS eller PostNord)', 'telefonnummer', 'den pakkeshop, du har valgt', 'Postnummeret, du søger pakkeshops med, sendes til Shipmondo og gemmes ikke']) expect(p, t).toContain(t);
+    for (const t of ['kurven kun i din egen browser', 'Stripe', 'Shipmondo og fragtfirmaet (DAO, GLS eller PostNord)', 'telefonnummer', 'den pakkeshop, du har valgt', 'Postnummeret, du søger pakkeshops med, sendes til Shipmondo og gemmes ikke']) expect(p, t).toContain(t);
   });
 
   it('fortrydelsesknappen har to trin og kvittering med tidspunkt', () => {
@@ -289,12 +304,15 @@ describe('hjemmesiden passer til kassen', () => {
     const k = fil('kurv.js');
     expect(k).toContain('<select class="kurv-shops"');
     expect(k).toContain("K.api + '/pakkeshops?firma='");
-    expect(k).toContain('pakkeshop: { firma: valg.firma, postnr: valg.soeg, id: valg.shop.id }');
+    expect(k).toContain('krop.pakkeshop = { firma: valg.firma, postnr: valg.soeg, id: valg.shop.id }');
   });
 
-  it('der står ingen steder, at mærkerne sendes som brev', () => {
-    for (const n of sider) expect(fil(n), n).not.toMatch(/som brev/i);
-    expect(fil('kurv-data.js')).not.toMatch(/som brev/i);
+  it('DAO (brev) er det første og forvalgte fragtvalg, GLS og PostNord kan stadig vælges', () => {
+    const k = fil('kurv.js');
+    expect(k).toContain("var FIRMAER = [['dao', 'DAO (brev)', true], ['gls', 'GLS'], ['postnord', 'PostNord']];");
+    expect(k).toContain('valg.firma = FIRMAER[0][0]');
+    expect(k).toContain('krop.fragtfirma = valg.firma');
+    for (const n of ['index.html', 'betingelser.html', 'tak.html']) expect(fil(n), n).toContain('DAO (brev)');
   });
 
   it('workflowet prøver pakkeshops og en rigtig betalingsside efter udgivelsen', () => {

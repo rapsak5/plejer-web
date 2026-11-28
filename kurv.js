@@ -1,4 +1,5 @@
 // Kurven på plejer.dk. Kopieret fra StemplerInd (24. nov. 2026) med pakkeshop-valg.
+// Levering: DAO (brev) i postkassen er første valg. GLS og PostNord er pakkeshop, som kunden vælger her.
 // Ligger kun i browseren (localStorage) og sendes først til kassen, når kunden vil betale.
 // Priserne her er kun til visning. Kassen hos Cloudflare slår de rigtige priser op selv.
 // Teksterne, priserne og kassens adresse kommer fra window.KURV i kurv-data.js, som butik/konfigurer.mjs laver.
@@ -7,7 +8,8 @@
 (function () {
   var K = window.KURV; if (!K || !K.api) return;
   var t = K.t, NOEGLE = 'plejer-kurv', SHOP_NOEGLE = 'plejer-pakkeshop', TEST = 'plejer-butik-test', MAKS = 50;
-  var FIRMAER = [['gls', 'GLS'], ['postnord', 'PostNord']];
+  // [nøgle, navn, hjem]. Hjem = leveres til adressen fra Stripe, ingen pakkeshop.
+  var FIRMAER = [['dao', 'DAO (brev)', true], ['gls', 'GLS'], ['postnord', 'PostNord']];
   var koebt = /[?&]koeb=tak/.test(location.search);
   try { if (/[?&]butik=test/.test(location.search)) sessionStorage.setItem(TEST, '1'); } catch (e) { }
   var test = false; try { test = sessionStorage.getItem(TEST) === '1'; } catch (e) { }
@@ -35,7 +37,7 @@
   panel.innerHTML = '<div class="kurv-hoved"><h2></h2><button type="button" class="kurv-luk"></button></div><ul class="kurv-linjer"></ul><p class="kurv-tom daempet"></p>'
     + '<section class="kurv-shop"><h3></h3><div class="kurv-firma" role="radiogroup"></div>'
     + '<form class="kurv-soeg" novalidate><input type="text" inputmode="numeric" autocomplete="postal-code" maxlength="4" pattern="[0-9]{4}"><button type="submit" class="knap sek lille"></button></form>'
-    + '<p class="kurv-shopinfo daempet" role="status" hidden></p><select class="kurv-shops" hidden></select></section>'
+    + '<p class="kurv-hjem daempet" hidden></p><p class="kurv-shopinfo daempet" role="status" hidden></p><select class="kurv-shops" hidden></select></section>'
     + '<dl class="kurv-sum"></dl><p class="kurv-fejl" role="alert" hidden></p><button type="button" class="knap kurv-betal"></button><p class="kurv-stripe daempet"></p><p class="kurv-vilkaar"><a href="betingelser.html"></a></p>';
   panel.querySelector('h2').textContent = t.kurvTitel;
   var luk = panel.querySelector('.kurv-luk'); luk.textContent = '×'; luk.setAttribute('aria-label', t.kurvLuk);
@@ -49,18 +51,25 @@
   // Listen kommer fra Shipmondo gennem kassen hos Cloudflare, sorteret efter afstand.
   // Valget gemmes i browseren og sendes med til kassen, som slår shoppen op igen hos fragtfirmaet.
   var valg = (function () { try { var v = JSON.parse(localStorage.getItem(SHOP_NOEGLE) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } })();
-  if (!valg.firma || !FIRMAER.some(function (f) { return f[0] === valg.firma; })) valg.firma = 'gls';
+  if (!valg.firma || !FIRMAER.some(function (f) { return f[0] === valg.firma; })) valg.firma = FIRMAER[0][0];
+  function erHjem() { return FIRMAER.some(function (f) { return f[0] === valg.firma && f[2]; }); }
   function gemValg() { try { localStorage.setItem(SHOP_NOEGLE, JSON.stringify(valg)); } catch (e) { } }
   var shopDel = panel.querySelector('.kurv-shop'), firmaDel = panel.querySelector('.kurv-firma'), soeg = panel.querySelector('.kurv-soeg');
   var postnr = soeg.querySelector('input'), findKnap = soeg.querySelector('button'), info = panel.querySelector('.kurv-shopinfo');
-  var vaelger = panel.querySelector('.kurv-shops'), liste = [];
+  var vaelger = panel.querySelector('.kurv-shops'), hjemInfo = panel.querySelector('.kurv-hjem'), liste = [];
+  hjemInfo.textContent = t.kurvHjem;
+  // DAO: ingen pakkeshop, så postnummer og dropdown skjules
+  function visFirma() {
+    var h = erHjem(); soeg.hidden = h; hjemInfo.hidden = !h;
+    if (h) { vaelger.hidden = true; besked(''); } else if (valg.shop && valg.shop.id && !liste.length) fyld([valg.shop], valg.shop.id);
+  }
   shopDel.querySelector('h3').textContent = t.kurvLevering;
   postnr.setAttribute('aria-label', t.kurvPostnr); postnr.placeholder = t.kurvPostnr; postnr.value = valg.soeg || '';
   findKnap.textContent = t.kurvFind;
   vaelger.setAttribute('aria-label', t.kurvVaelgShop);
   FIRMAER.forEach(function (f) {
     var lab = el('label', 'kurv-firmavalg'), r = el('input'); r.type = 'radio'; r.name = 'kurv-firma'; r.value = f[0]; r.checked = valg.firma === f[0];
-    r.onchange = function () { valg.firma = f[0]; valg.shop = null; gemValg(); vaelger.hidden = true; besked(''); if (/^\d{4}$/.test(postnr.value)) find(); };
+    r.onchange = function () { valg.firma = f[0]; valg.shop = null; liste = []; gemValg(); vaelger.hidden = true; besked(''); fejl.hidden = true; visFirma(); if (!erHjem() && /^\d{4}$/.test(postnr.value)) find(); };
     lab.appendChild(r); lab.appendChild(el('span', null, f[1])); firmaDel.appendChild(lab);
   });
   function shopTekst(p) { return p.navn + ', ' + p.adresse + ', ' + p.postnr + ' ' + p.by; }
@@ -95,9 +104,10 @@
   }
   soeg.onsubmit = function (e) { e.preventDefault(); find(); };
   // Fire cifre er nok: listen hentes, så snart postnummeret er skrevet
-  postnr.oninput = function () { if (/^\d{4}$/.test(postnr.value.replace(/\s/g, ''))) find(); };
+  postnr.oninput = function () { if (!erHjem() && /^\d{4}$/.test(postnr.value.replace(/\s/g, ''))) find(); };
   // Kunden har valgt før: vis den gemte shop i dropdownen
-  if (valg.shop && valg.shop.id) fyld([valg.shop], valg.shop.id);
+  if (!erHjem() && valg.shop && valg.shop.id) fyld([valg.shop], valg.shop.id);
+  visFirma();
 
   function tegn() {
     var n = antal(); knapTal.textContent = n; knap.hidden = n === 0;
@@ -146,9 +156,12 @@
   betal.onclick = function () {
     var varer = Object.keys(kurv).map(function (id) { return { id: id, antal: kurv[id] }; });
     if (!varer.length) return;
-    if (!valg.shop || !valg.shop.id) { fejl.textContent = t.kurvVaelg; fejl.hidden = false; (vaelger.hidden ? postnr : vaelger).focus(); return; }
+    var hjem = erHjem();
+    if (!hjem && (!valg.shop || !valg.shop.id)) { fejl.textContent = t.kurvVaelg; fejl.hidden = false; (vaelger.hidden ? postnr : vaelger).focus(); return; }
     betal.disabled = true; betal.textContent = t.kurvVent; fejl.hidden = true;
-    fetch(K.api + '/kasse', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ varer: varer, sprog: K.sprog, sti: location.pathname, pakkeshop: { firma: valg.firma, postnr: valg.soeg, id: valg.shop.id } }) })
+    var krop = { varer: varer, sprog: K.sprog, sti: location.pathname };
+    if (hjem) krop.fragtfirma = valg.firma; else krop.pakkeshop = { firma: valg.firma, postnr: valg.soeg, id: valg.shop.id };
+    fetch(K.api + '/kasse', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(krop) })
       .then(function (r) { return r.json().then(function (d) { if (!r.ok || !d.url) throw new Error(d.fejl || r.status); return d; }); })
       .then(function (d) { location.href = d.url; })
       .catch(function (e) {

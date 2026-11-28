@@ -443,13 +443,14 @@ button.knap { font-family: var(--sans); }
 .kurv-shop { margin: 16px 0 0; padding: 0; border: 0; }
 .kurv-shop[hidden], .kurv-shop [hidden] { display: none; }
 .kurv-shop h3 { margin: 0 0 10px; font-size: 16px; }
-.kurv-firma { display: flex; gap: 8px; margin-bottom: 10px; }
-.kurv-firmavalg { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 1px solid var(--kant); border-radius: 12px; background: var(--papir); font-weight: 600; cursor: pointer; }
+.kurv-firma { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.kurv-firmavalg { flex: 1; display: flex; white-space: nowrap; padding: 0 6px; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 1px solid var(--kant); border-radius: 12px; background: var(--papir); font-weight: 600; cursor: pointer; }
 .kurv-firmavalg:has(input:checked) { border-color: var(--groen); box-shadow: inset 0 0 0 1px var(--groen); }
 .kurv-soeg { display: flex; gap: 8px; }
 .kurv-soeg input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--kant); border-radius: 12px; background: var(--papir); color: var(--blaek); font: inherit; font-family: var(--mono); }
 .kurv-soeg .knap { min-height: 44px; padding: 0 14px; white-space: nowrap; }
 .kurv-shopinfo { font-size: 14px; margin: 8px 0 0; }
+.kurv-hjem { font-size: 14px; margin: 0; }
 .kurv-shops { width: 100%; min-height: 44px; margin-top: 10px; padding: 0 12px; border: 1px solid var(--kant); border-radius: 12px; background: var(--papir); color: var(--blaek); font: inherit; font-size: 15px; }
 .kurv-sum { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 14px 0 16px; }
 .kurv-sum[hidden] { display: none; }

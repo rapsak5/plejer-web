@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#C9A227">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
-<link rel="icon" href="ikon.svg"><link rel="stylesheet" href="stil.css?v=2a952eae51">
+<link rel="icon" href="ikon.svg"><link rel="stylesheet" href="stil.css?v=286c7631d6">
 </head>
 <body><main class="enkel">
 <div class="enkel-top"><a class="logo-navn" href="./"><img src="ikon.svg" alt="">Plejer</a></div>
@@ -19,7 +19,7 @@
   <div id="o-shop" hidden><h2>Afhentes i</h2><p id="o-shopadr"></p></div>
   <div id="o-lev" hidden><h2>Leveres til</h2><p id="o-adresse"></p></div>
   <h2>Hvad sker der nu?</h2>
-  <p>Vi pakker dine mærker og sender dem normalt inden for 3 hverdage til din pakkeshop. Du får besked på sms og mail, når pakken kan hentes.</p>
+  <p id="o-naeste">Vi pakker dine mærker og sender dem normalt inden for 3 hverdage.</p>
   <p>Imens kan du åbne appen og oprette din husstand.</p>
   <p><a class="knap" href="app/">Åbn appen</a></p>
 </div>
@@ -74,6 +74,10 @@
         });
         $('o-lev').hidden = false;
       }
+      // DAO (brev) kommer i postkassen. Pakkeshop: kunden får besked, når pakken kan hentes.
+      $('o-naeste').textContent = o.hjem
+        ? 'Vi pakker dine mærker og sender dem normalt inden for 3 hverdage med DAO (brev) direkte i din postkasse.'
+        : 'Vi pakker dine mærker og sender dem normalt inden for 3 hverdage til din pakkeshop. Du får besked på sms og mail, når pakken kan hentes.';
       $('o-henter').hidden = true; $('o-ordre').hidden = false;
     })
     .catch(function () { vis(T.fejl); });

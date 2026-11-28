@@ -1,7 +1,7 @@
 // Betalt ordre fra Stripe til Shipmondo: underskriften skal passe, og ordren skal have rigtige beløb, moms, telefon og pakkeshop.
 // Bygget på StemplerInds test fra 24. nov. 2026.
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { tjekUnderskrift, shipmondoOrdre, stripeHaendelse, telefon, vaelgSkabelon, pakkeshopListe, fragtOere } from '../butik/fragt.js';
+import { tjekUnderskrift, shipmondoOrdre, stripeHaendelse, telefon, vaelgSkabelon, pakkeshopListe, fragtOere, valgtPakkeshop } from '../butik/fragt.js';
 import { KATALOG } from '../butik/katalog.js';
 
 const HEMMELIG = 'whsec_test123';
@@ -44,7 +44,7 @@ describe('Stripe til Shipmondo', () => {
     expect(o.order_lines).toHaveLength(3);
     expect(o.order_lines[0]).toMatchObject({ line_type: 'item', item_name: 'Pakke 1, 8 hvide mærker', item_sku: 'PL-PAKKE-1', quantity: 1, unit_price_excluding_vat: 159.2 });
     expect(o.order_lines[1]).toMatchObject({ item_name: 'Pakke 2, 8 sorte mærker', item_sku: 'PL-PAKKE-2', quantity: 2, unit_price_excluding_vat: 159.2 });
-    expect(o.order_lines[2]).toMatchObject({ line_type: 'shipping', item_name: KATALOG.fragt.navn.da, unit_price_excluding_vat: 39.2 });
+    expect(o.order_lines[2]).toMatchObject({ line_type: 'shipping', item_name: 'PostNord pakkeshop', unit_price_excluding_vat: 39.2 });
     expect(o.payment_details).toMatchObject({ amount_including_vat: 646, amount_excluding_vat: 516.8, authorized_amount: 646, vat_amount: 129.2, currency_code: 'DKK', transaction_id: 'pi_123' });
     // Uden ordrenummer bruges sessionens id
     expect(shipmondoOrdre(Object.assign({}, session, { metadata: { kurv: '1xpakke-1' } }), KATALOG).order_id).toBe('cs_test_abc');
@@ -105,6 +105,27 @@ describe('Stripe til Shipmondo', () => {
     expect(vaelgSkabelon(liste.slice(0, 3), 'plejer', 'postnord')).toBe(7);
     expect(vaelgSkabelon(liste.slice(0, 2), 'plejer', 'gls')).toBeNull();
     expect(vaelgSkabelon(null, 'plejer', 'gls')).toBeNull();
+  });
+
+  it('DAO (brev) får sin egen skabelon og falder aldrig tilbage på en pakkeshop', () => {
+    const liste = [{ id: 1, name: 'StemplerInd GLS pakkeshop' }, { id: 6, name: 'Plejer DAO (brev)' }, { id: 7, name: 'Plejer GLS pakkeshop' }, { id: 8, name: 'Plejer PostNord pakkeshop' }];
+    expect(vaelgSkabelon(liste, 'plejer', 'dao')).toBe(6);
+    expect(vaelgSkabelon(liste, 'plejer', 'gls')).toBe(7);
+    // Mangler PostNords skabelon, bruges en anden pakkeshop, aldrig DAO
+    expect(vaelgSkabelon([liste[1], liste[2]], 'plejer', 'postnord')).toBe(7);
+    expect(vaelgSkabelon([liste[1]], 'plejer', 'postnord')).toBeNull();
+    // Mangler DAO's skabelon, vælger Kasper selv i Shipmondo
+    expect(vaelgSkabelon([liste[2], liste[3]], 'plejer', 'dao')).toBeNull();
+  });
+
+  it('DAO (brev) sendes til kundens adresse uden pakkeshop', () => {
+    const dao = Object.assign({}, session, { metadata: { kurv: '1xpakke-1', butik: 'plejer.dk', ordre: 'PL-DAO1', fragtfirma: 'dao', pakkeshop_id: '1234' } });
+    expect(valgtPakkeshop(dao)).toBeNull();
+    const o = shipmondoOrdre(dao, KATALOG, 6);
+    expect(o.service_point).toBeUndefined();
+    expect(o.shipment_template_id).toBe(6);
+    expect(o.ship_to).toMatchObject({ address1: 'Testvej 1', zipcode: '2300' });
+    expect(o.order_lines.find(l => l.line_type === 'shipping').item_name).toBe('DAO (brev)');
   });
 
   it('sorterer pakkeshops med butikker før bokse, højst 12, og retter bynavne', () => {

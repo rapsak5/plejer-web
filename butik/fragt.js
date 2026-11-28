@@ -4,16 +4,23 @@
 // I Shipmondo vælger Kasper ordren og printer labelen.
 //
 // Hemmeligheder i Cloudflare: STRIPE_WEBHOOK_SECRET (whsec_...), SHIPMONDO_API_USER og SHIPMONDO_API_KEY.
-// Skabelonen findes på navnet: SHIPMONDO_SKABELON, ellers skabelon i katalog.js. "Plejer" finder "Plejer GLS pakkeshop"
-// og "Plejer PostNord pakkeshop". StemplerInds skabeloner ligger på samme Shipmondo-konto, så søg aldrig kun på "pakkeshop".
+// Skabelonen findes på navnet: SHIPMONDO_SKABELON, ellers skabelon i katalog.js. "Plejer" finder "Plejer DAO (brev)",
+// "Plejer GLS pakkeshop" og "Plejer PostNord pakkeshop". StemplerInds skabeloner ligger på samme Shipmondo-konto, så søg aldrig kun på "pakkeshop".
 
 const SHIPMONDO = 'https://app.shipmondo.com/api/public/v3';
 const MOMS = 25;
 // Shipmondo vil have momsen som brøk: 25 % skrives 0.25. Står der 25, ganger Shipmondo prisen med 26.
 const MOMS_BROEK = MOMS / 100;
 const TOLERANCE_SEK = 300;
-// Fragtfirmaer, kunden kan vælge pakkeshop hos. Nøglen står i kurven og på betalingen, koden er Shipmondos.
-export const FRAGTFIRMAER = { gls: { kode: 'gls', navn: 'GLS' }, postnord: { kode: 'pdk', navn: 'PostNord' } };
+// Fragtfirmaerne i kurven. Nøglen står i kurven og på betalingen, koden er Shipmondos.
+// DAO er det første valg: mærkerne kommer som brev i postkassen (daoHOME i Shipmondo), så kunden ikke skal hente noget.
+// GLS og PostNord er pakkeshop, hvor kunden vælger shoppen i kurven.
+export const FRAGTFIRMAER = {
+  dao: { kode: 'dao', navn: 'DAO', visning: 'DAO (brev)', hjem: true },
+  gls: { kode: 'gls', navn: 'GLS', visning: 'GLS pakkeshop' },
+  postnord: { kode: 'pdk', navn: 'PostNord', visning: 'PostNord pakkeshop' }
+};
+export const erHjem = firma => !!(FRAGTFIRMAER[firma] && FRAGTFIRMAER[firma].hjem);
 
 const kr = oere => Math.round(oere) / 100;
 const udenMoms = oere => Math.round(oere / (1 + MOMS / 100)) / 100;
@@ -53,10 +60,16 @@ export function telefon(nr, land = 'DK') {
   return t;
 }
 
+// Fragtfirmaet på betalingen, fx 'dao'. Null på ældre betalinger uden.
+export function valgtFirma(s) {
+  const f = (s && s.metadata && s.metadata.fragtfirma) || '';
+  return FRAGTFIRMAER[f] ? f : null;
+}
+
 // Pakkeshoppen, kunden valgte i kurven. Kassen har slået den op hos Shipmondo og lagt den på betalingen.
 export function valgtPakkeshop(s) {
   const m = s.metadata || {};
-  if (!m.pakkeshop_id || !FRAGTFIRMAER[m.fragtfirma]) return null;
+  if (!m.pakkeshop_id || !FRAGTFIRMAER[m.fragtfirma] || erHjem(m.fragtfirma)) return null;
   return { firma: m.fragtfirma, id: m.pakkeshop_id, navn: m.pakkeshop_navn || '', adresse: m.pakkeshop_adresse || '', postnr: m.pakkeshop_postnr || '', by: m.pakkeshop_by || '' };
 }
 
@@ -87,7 +100,8 @@ export function shipmondoOrdre(s, K, skabelonId) {
     return { line_type: 'item', item_name: (v.navn.da + ekstra).slice(0, 250), item_sku: (K.skuPraefiks || 'PL-') + id.toUpperCase(), quantity: Number(antal), unit_price_excluding_vat: udenMoms(v.oere), vat_percent: MOMS_BROEK, currency_code: valuta };
   });
   const fragt = fragtOere(s, linjer.map(l => Math.round(l.unit_price_excluding_vat * (1 + MOMS / 100) * 100) * l.quantity));
-  if (fragt) linjer.push({ line_type: 'shipping', item_name: K.fragt.navn.da, quantity: 1, unit_price_excluding_vat: udenMoms(fragt), vat_percent: MOMS_BROEK, currency_code: valuta });
+  const firma = valgtFirma(s);
+  if (fragt) linjer.push({ line_type: 'shipping', item_name: firma ? FRAGTFIRMAER[firma].visning : K.fragt.navn.da, quantity: 1, unit_price_excluding_vat: udenMoms(fragt), vat_percent: MOMS_BROEK, currency_code: valuta });
   const total = s.amount_total || 0;
   const ordre = {
     order_id: (s.metadata && s.metadata.ordre) || s.id,
@@ -109,12 +123,16 @@ async function shipmondo(sti, env, init = {}) {
   return fetch(SHIPMONDO + sti, Object.assign({}, init, { headers: Object.assign({ authorization: auth, 'content-type': 'application/json', accept: 'application/json' }, init.headers || {}) }));
 }
 
-// Forsendelsesskabelonen til fragtfirmaet: navnet skal indeholde "Plejer" og firmaets navn, fx "Plejer PostNord pakkeshop".
-// Findes ingen til firmaet, bruges den første Plejer-skabelon.
+// Forsendelsesskabelonen til fragtfirmaet: navnet skal indeholde "Plejer" og firmaets navn, fx "Plejer DAO (brev)"
+// eller "Plejer PostNord pakkeshop". Findes ingen til et pakkeshopfirma, bruges den første Plejer-skabelon til pakkeshop.
+// Brev med DAO falder aldrig tilbage på en pakkeshopskabelon og omvendt. Så vælger Kasper i Shipmondo.
 export function vaelgSkabelon(liste, navn, firma) {
-  const alle = (Array.isArray(liste) ? liste : []).filter(x => String(x.name || '').toLowerCase().includes(navn));
-  const f = firma && FRAGTFIRMAER[firma] ? FRAGTFIRMAER[firma].navn.toLowerCase() : null;
-  const t = (f && alle.find(x => String(x.name || '').toLowerCase().includes(f))) || alle[0];
+  const lav = x => String(x.name || '').toLowerCase();
+  const alle = (Array.isArray(liste) ? liste : []).filter(x => lav(x).includes(navn));
+  const f = FRAGTFIRMAER[firma] ? FRAGTFIRMAER[firma].navn.toLowerCase() : null;
+  const hjemNavne = Object.values(FRAGTFIRMAER).filter(x => x.hjem).map(x => x.navn.toLowerCase());
+  const eget = f && alle.find(x => lav(x).includes(f));
+  const t = eget || (erHjem(firma) ? null : alle.find(x => !hjemNavne.some(h => lav(x).includes(h))));
   return t ? t.id : null;
 }
 
@@ -147,7 +165,7 @@ export function pakkeshopListe(data, maks = 12) {
 }
 
 export async function findPakkeshops(firma, postnr, env) {
-  if (!FRAGTFIRMAER[firma]) throw new Error('fragtfirma');
+  if (!FRAGTFIRMAER[firma] || erHjem(firma)) throw new Error('fragtfirma');
   if (!/^\d{4}$/.test(String(postnr || ''))) throw new Error('postnr');
   if (!env.SHIPMONDO_API_USER || !env.SHIPMONDO_API_KEY) throw new Error('mangler-shipmondo');
   const sti = '/pickup_points?carrier_code=' + FRAGTFIRMAER[firma].kode + '&country_code=DK&zipcode=' + postnr + '&quantity=25';
