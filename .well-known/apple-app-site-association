@@ -1,0 +1,18 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "4UNB3QZPHM.dk.plejer.app"
+        ],
+        "components": [
+          {
+            "/": "/app/*",
+            "?": { "t": "?*" },
+            "comment": "Kun mærkernes adresse https://plejer.dk/app/?t=A1-xxxx åbner appen"
+          }
+        ]
+      }
+    ]
+  }
+}

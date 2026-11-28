@@ -154,6 +154,79 @@ function besked(tekst) { $("besked").textContent = tekst; clearTimeout(beskedTim
 function gem(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 function hent(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
 
+/* ---------- iPhone-appen ---------- */
+// I iPhone-appen (Capacitor) kører den samme webapp i en native skal. Her kobles NFC, påmindelser på telefonen,
+// haptik og deling på. I en almindelig browser er NATIV null, og intet af det her bliver brugt.
+const NATIV = window.Capacitor?.isNativePlatform?.() ? window.Capacitor : null;
+const P = NATIV ? NATIV.Plugins : {};
+let nfcNativ = false, sidsteLink = { t: "", tid: 0 }, planTimer = null;
+async function nativStart() {
+  if (!NATIV) return;
+  document.documentElement.classList.add("nativ");
+  try { nfcNativ = !!(await P.PlejerNFC?.isAvailable())?.available; } catch (e) {}
+  // Et mærke scannet uden for appen åbner den via Universal Links: https://plejer.dk/app/?t=A1-xxxx
+  const fraLink = (url) => {
+    try {
+      const t = new URL(url).searchParams.get("t"); if (!t) return;
+      if (sidsteLink.t === t && Date.now() - sidsteLink.tid < 5000) return;
+      sidsteLink = { t, tid: Date.now() }; modtagScan(t);
+    } catch (e) {}
+  };
+  try { P.App?.addListener("appUrlOpen", (e) => fraLink(e.url)); } catch (e) {}
+  try { const l = await P.App?.getLaunchUrl(); if (l?.url) fraLink(l.url); } catch (e) {}
+  try { P.App?.addListener("resume", () => { planlaegSnart(); if (S.visning === "hjem" && !$("ark").innerHTML) render(); }); } catch (e) {}
+  try { P.LocalNotifications?.addListener("localNotificationActionPerformed", () => { if (S.lager && S.visning !== "start" && S.visning !== "henter") { lukArk(); S.visning = "hjem"; S.data = null; render(); } }); } catch (e) {}
+}
+function modtagScan(t) {
+  if (!S.lager || S.visning === "henter") { S.scan = t; return; }
+  if (S.visning === "start") { besked("Opret eller deltag i en husstand først. Scan så mærket igen."); return; }
+  haandterScan(t);
+}
+function haptik() { try { P.Haptics?.notification({ type: "SUCCESS" }); } catch (e) {} }
+async function delKode(navn, kode) {
+  await P.Share.share({ title: "Plejer", text: `Deltag i ${navn} på Plejer med koden ${kode}. Hent appen på https://plejer.dk`, dialogTitle: "Del koden" });
+}
+// Påmindelser på iPhonen planlægges lokalt ud fra listen. De planlægges forfra, hver gang listen ændrer sig.
+async function slaaPaamindelserTil() {
+  const r = await P.LocalNotifications.requestPermissions();
+  if (r.display !== "granted") throw new Error("Notifikationer er slået fra for Plejer. Slå dem til under Indstillinger, Notifikationer, Plejer.");
+  gem("plejer-lokal", true);
+  await planlaegPaamindelser();
+}
+function planlaegSnart() { if (!NATIV) return; clearTimeout(planTimer); planTimer = setTimeout(planlaegPaamindelser, 1500); }
+// Påmindelser ligger mellem 8 og 21. Falder en frist uden for, flyttes den til kl. 9.
+function vaagenTid(t) {
+  const d = new Date(t), h = d.getHours();
+  if (h >= 8 && h < 21) return t;
+  if (h >= 21) d.setDate(d.getDate() + 1);
+  d.setHours(9, 0, 0, 0); return d.getTime();
+}
+async function planlaegPaamindelser() {
+  if (!NATIV || !P.LocalNotifications || !hent("plejer-lokal") || !S.lager || S.lager.demo || !S.lager.hid) return;
+  try {
+    const ventende = (await P.LocalNotifications.getPending()).notifications || [];
+    if (ventende.length) await P.LocalNotifications.cancel({ notifications: ventende.map((n) => ({ id: n.id })) });
+    const nu = Date.now(), grupper = new Map();
+    // Det, der allerede er over tid, minder appen om næste morgen kl. 9.
+    const naeste9 = () => { const d = new Date(nu); if (d.getHours() >= 9) d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d.getTime(); };
+    for (const o of S.lager.opgaver()) {
+      if (!o.lastDone) continue;
+      const frist = naesteGang(o), over = frist <= nu;
+      const t = Math.floor((over ? naeste9() : vaagenTid(frist)) / 6e4) * 6e4;
+      if (!grupper.has(t)) grupper.set(t, []);
+      grupper.get(t).push({ o, over });
+    }
+    const plan = [...grupper.entries()].sort((a, b) => a[0] - b[0]).slice(0, 60).map(([t, liste], k) => {
+      const f = liste[0], n = liste.length;
+      const body = n === 1
+        ? (f.over ? `${f.o.name} er over tid. Scan mærket, når det er gjort.` : `${f.o.name}${f.o.place ? ` (${f.o.place})` : ""} skal gøres i dag.`)
+        : `${f.o.name} og ${n - 1} ${n - 1 === 1 ? "anden opgave" : "andre opgaver"} skal gøres.`;
+      return { id: k + 1, title: "Plejer", body, schedule: { at: new Date(t), allowWhileIdle: true } };
+    });
+    if (plan.length) await P.LocalNotifications.schedule({ notifications: plan });
+  } catch (e) { console.warn("Påmindelser kunne ikke planlægges", e); }
+}
+
 /* ---------- Lager: demo ---------- */
 class DemoLager {
   constructor() { this.data = hent("plejer-demo"); this.lyttere = new Set(); this.uid = "demo"; this.demo = true; }
@@ -435,7 +508,7 @@ function visHjem() {
 }
 function bundKnapper(antal = 0) {
   let html = '<div class="bund-knapper">';
-  if ("NDEFReader" in window) html += '<button class="knap bred" data-handling="nfc">Scan mærke</button>';
+  if ("NDEFReader" in window || nfcNativ) html += '<button class="knap bred" data-handling="nfc">Scan mærke</button>';
   else html += '<p class="daempet" style="text-align:center;font-size:15px">Hold telefonen hen til et mærke for at scanne.</p>';
   if (S.lager.demo) html += '<button class="knap sek bred" data-handling="proev">Prøv et mærke</button>';
   if (antal > 1) html += '<button class="link" data-handling="sorter-ark">Sortér og filtrér</button>';
@@ -547,11 +620,11 @@ function visOpgaveArk(id) {
 function visIndstillinger() {
   const h = S.lager.husstand(), m = S.lager.medlemmer();
   aabnArk(`<h2>${esc(h?.navn || "Husstand")}</h2>
-    ${S.lager.demo ? `<p class="daempet">${S.firebase ? "Det her er en demo. Afslut den for at oprette jeres egen husstand og invitere resten med en kode." : "Demotilstand. Når appen er koblet til Firebase, kan resten af husstanden deltage med en kode."}</p>` : `<span class="etiket">Kode til resten af husstanden</span><div class="kode" id="kode-vis">${esc(h?.invitation || "")}</div><button class="knap sek bred" data-handling="kopier">Kopiér koden</button>`}
+    ${S.lager.demo ? `<p class="daempet">${S.firebase ? "Det her er en demo. Afslut den for at oprette jeres egen husstand og invitere resten med en kode." : "Demotilstand. Når appen er koblet til Firebase, kan resten af husstanden deltage med en kode."}</p>` : `<span class="etiket">Kode til resten af husstanden</span><div class="kode" id="kode-vis">${esc(h?.invitation || "")}</div><button class="knap sek bred" data-handling="kopier">${NATIV ? "Del koden" : "Kopiér koden"}</button>`}
     <span class="etiket">Indstillinger</span>
     <button class="kontakt" role="switch" aria-checked="${!!h?.multi}" data-handling="multi"><span><b>Flere opgaver på ét mærke</b><span class="daempet">Fx filter, salt og afspændingsmiddel på opvaskemaskinen. Når mærket scannes, vælger man, hvad man har gjort.</span></span><i aria-hidden="true"></i></button>
     <span class="etiket">Medlemmer</span><div class="medlemmer">${Object.entries(m).map(([uid, x]) => `<div><span>${esc(x.name)}</span><span class="daempet">${uid === S.lager.uid ? "dig" : ""}</span></div>`).join("")}</div>
-    ${S.lager.demo ? "" : `<button class="knap bred" data-handling="push">${hent("plejer-push") ? "Påmindelser er slået til" : "Slå påmindelser til"}</button>`}
+    ${S.lager.demo ? "" : `<button class="knap bred" data-handling="push">${hent(NATIV ? "plejer-lokal" : "plejer-push") ? "Påmindelser er slået til" : "Slå påmindelser til"}</button>`}
     ${S.lager.demo && S.firebase ? '<button class="knap bred" data-handling="afslut-demo">Afslut demoen</button>' : '<button class="knap sek bred" data-handling="forlad">Forlad husstanden</button>'}
     <button class="link" data-handling="luk">Luk</button>`);
 }
@@ -572,7 +645,7 @@ async function registrer(liste, kilde) {
     }
   } catch (e) { besked("Kunne ikke gemme. Tjek forbindelsen."); if (!nye.length) return; }
   S.sidste = backup.slice(0, nye.length);
-  ding();
+  ding(); haptik();
   S.visning = "klaret"; S.data = { ids: nye.map((o) => o.id), opgaver: nye }; render();
 }
 async function haandterScan(rå) {
@@ -603,6 +676,11 @@ function laesForm() {
   if (num) f.num = Math.max(1, Math.min(99, parseInt(num.value, 10) || 1)); if (en) f.unit = en.value;
 }
 async function scanNfc() {
+  if (nfcNativ) {
+    try { const r = await P.PlejerNFC.scan({ besked: "Hold toppen af telefonen mod mærket" }); await haandterScan(r.url); }
+    catch (e) { if (e?.code !== "afbrudt") besked(e?.message || "NFC er ikke tilgængelig lige nu."); }
+    return;
+  }
   try {
     const laeser = new NDEFReader(), stop = new AbortController();
     await laeser.scan({ signal: stop.signal });
@@ -692,8 +770,9 @@ document.addEventListener("click", async (ev) => {
     else S.lyd = false;
     return render();
   }
+  if (h === "kopier" && NATIV) { try { await delKode(S.lager.husstand()?.navn || "husstanden", $("kode-vis").textContent); } catch (e) {} return; }
   if (h === "kopier") { try { await navigator.clipboard.writeText($("kode-vis").textContent); besked("Koden er kopieret"); } catch (e) { besked("Markér koden og kopiér den."); } return; }
-  if (h === "push") { try { await S.lager.slaaPushTil(); besked("Påmindelser er slået til på denne telefon"); visIndstillinger(); } catch (e) { besked(e.message); } return; }
+  if (h === "push") { try { await (NATIV ? slaaPaamindelserTil() : S.lager.slaaPushTil()); besked("Påmindelser er slået til på denne telefon"); visIndstillinger(); } catch (e) { besked(e.message); } return; }
   if (h === "forlad") {
     if (!S.slet) { S.slet = true; el.textContent = "Tryk igen for at forlade"; el.classList.replace("sek", "fare"); return; }
     try { await S.lager.forlad(); } catch (e) { besked("Kunne ikke forlade husstanden."); return; }
@@ -757,6 +836,7 @@ function efterStart() {
 (async () => {
   const p = new URLSearchParams(location.search);
   S.scan = p.get("t") || p.get("scan");
+  await nativStart();
   try { navigator.serviceWorker?.register("sw.js").catch(() => {}); } catch (e) {}
   if (S.scan) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
   const ops = self.PLEJER_FIREBASE;
@@ -767,7 +847,7 @@ function efterStart() {
   if (S.firebase && S.lager.demo && !S.lager.data) S.lager.fyldDemo();
   try {
     const harHusstand = await S.lager.start();
-    S.lager.lyt(() => { if (S.visning === "hjem") render(); });
+    S.lager.lyt(() => { if (S.visning === "hjem") render(); planlaegSnart(); });
     S.visning = harHusstand ? "hjem" : "start";
     render();
     if (harHusstand) efterStart();
